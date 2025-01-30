@@ -19,7 +19,11 @@ public:
         _presetEmbedding(false),
         _exaggerationFactor(4),
         _updateCore(10),
-        _gradientDescentType(GradientDescentType::GPU)
+        _gradientDescentType(GradientDescentType::GPU),
+
+        _dimenFix(true),
+        _mode("clipping"),
+        _iters(1)
     {
 
     }
@@ -34,6 +38,10 @@ public:
     void setGradientDescentType(GradientDescentType gradientDescentType) { _gradientDescentType = gradientDescentType; }
     void setUpdateCore(int updateCore) { _updateCore = updateCore; }
 
+    void setDimenfix(bool dimenFix) { _dimenFix = dimenFix; }
+    void setMode(std::string mode) { _mode = mode;  }
+    void setIters(int iters) { _iters = iters; }
+
     int getNumIterations() const { return _numIterations; }
     int getPerplexity() const { return _perplexity; }
     int getExaggerationIter() const { return _exaggerationIter; }
@@ -44,6 +52,10 @@ public:
     GradientDescentType getGradientDescentType() const { return _gradientDescentType; }
     int getUpdateCore() const { return _updateCore; }
 
+    bool getDimenFix() const { return _dimenFix; }
+    int getIters() const { return _iters; }
+    std::string getMode() const { return _mode; }
+
 private:
     int _numIterations;
     int _perplexity;
@@ -53,6 +65,10 @@ private:
     double _exaggerationFactor;
     bool _presetEmbedding;
     GradientDescentType _gradientDescentType;     // Whether to use CPU or GPU gradient descent
+
+    bool _dimenFix;
+    int _iters;
+    std::string _mode;
 
     int _updateCore;        // Gradient descent iterations after which the embedding data set in ManiVault's core will be updated
 };

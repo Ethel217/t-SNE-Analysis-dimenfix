@@ -39,6 +39,9 @@ public: // Action getters
     ToggleAction& getReinitAction() { return _reinitAction; }
     ToggleAction& getSaveProbDistAction() { return _saveProbDistAction; }
 
+    ToggleAction& getDimenFixAction() { return _dimenFixAction; }
+    OptionAction& getModeAction() { return _modeAction; };
+
 public: // Serialization
 
     /**
@@ -61,4 +64,7 @@ protected:
     TsneComputationAction   _computationAction;                     /** Computation action */
     ToggleAction            _reinitAction;                          /** Whether to re-initialize instead of recomputing from scratch */
     ToggleAction            _saveProbDistAction;                    /** Save t-SNE to projects action */
+
+    ToggleAction            _dimenFixAction;     // true or false
+    OptionAction            _modeAction;
 };

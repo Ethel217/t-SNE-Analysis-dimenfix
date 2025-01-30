@@ -8,6 +8,7 @@
 
 #include <QCoreApplication>
 #include <QDebug>
+#include <fstream>
 
 #include "hdi/utils/scoped_timers.h"
 
@@ -165,6 +166,9 @@ hdi::dr::TsneParameters TsneWorker::tsneParameters()
     tsneParameters._exponential_decay_iter      = _tsneParameters.getExponentialDecayIter();
     tsneParameters._presetEmbedding             = _tsneParameters.getPresetEmbedding();
 
+    tsneParameters._dimenfix = _tsneParameters.getDimenFix();
+    tsneParameters._mode = _tsneParameters.getMode();
+
     return tsneParameters;
 }
 
@@ -234,11 +238,71 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
         {
             auto params = tsneParameters();
 
-            // In case of HSNE, the _probabilityDistribution is a non-summetric transition matrix and initialize() symmetrizes it here
-            if (_hasProbabilityDistribution)
-                _GPGPU_tSNE.initialize(_probabilityDistribution, &_embedding, params);
+            // read txt for labels
+            std::vector<int> labels;
+            std::ifstream labelFile("C:\\Users\\zixuanhan\\Thesis\\Evaluation\\mnist_labels.txt");
+            if (labelFile.is_open())
+            {
+                int label;
+                while (labelFile >> label)
+                {
+                    labels.push_back(label);
+                }
+                labelFile.close();
+            }
             else
-                _GPGPU_tSNE.initializeWithJointProbabilityDistribution(_probabilityDistribution, &_embedding, params);
+            {
+                qDebug() << "Error: Could not open labels file.";
+                return;
+            }
+            // create range_limit based on labels and class density
+            std::vector<hdi::dr::GpgpuSneCompute::Point2D> range_limits(labels.size());
+
+            std::map<int, int> label_counts;
+            for (int label : labels)
+            {
+                label_counts[label]++;
+            }
+
+            std::map<int, hdi::dr::GpgpuSneCompute::Point2D> label_ranges;
+            float current_start = 0.0f;
+            const float total_range = 100.0f;
+
+            for (const auto& pair : label_counts)
+            {
+                int label = pair.first;
+                int count = pair.second;
+
+                // Calculate proportional size of the range
+                float proportion = static_cast<float>(count) / labels.size();
+                float range_size = proportion * total_range;
+
+                // Assign range for the label
+                label_ranges[label] = {current_start, current_start + range_size};
+                current_start += range_size;
+            }
+
+            // Step 3: Assign ranges to each point based on its label
+            for (size_t i = 0; i < labels.size(); ++i)
+            {
+                int label = labels[i];
+                range_limits[i] = label_ranges[label];
+            }
+
+            // Print debug information
+            qDebug() << "Range limits created for" << labels.size() << "points, with" << label_counts.size() << "distinct labels.";
+            qDebug() << "First 10 range_limits:";
+            for (size_t i = 0; i < std::min<size_t>(10, range_limits.size()); ++i)
+            {
+                qDebug() << "Point" << i << ": Lower =" << range_limits[i].x
+                        << ", Upper =" << range_limits[i].y;
+            }
+
+            // In case of HSNE, the _probabilityDistribution is a non-symmetric transition matrix and initialize() symmetrizes it here
+            if (_hasProbabilityDistribution)
+                _GPGPU_tSNE.initialize(_probabilityDistribution, &_embedding, params, range_limits);
+            else
+                _GPGPU_tSNE.initializeWithJointProbabilityDistribution(_probabilityDistribution, &_embedding, params, range_limits);
 
             qDebug() << "A-tSNE (GPU): Exaggeration factor: " << params._exaggeration_factor << ", exaggeration iterations: " << params._remove_exaggeration_iter << ", exaggeration decay iter: " << params._exponential_decay_iter;
         }

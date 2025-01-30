@@ -11,22 +11,29 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _perplexityAction(this, "Perplexity"),
     _computationAction(this),
     _reinitAction(this, "Reintialize instead of recompute", false),
-    _saveProbDistAction(this, "Save analysis to projects", false)
+    _saveProbDistAction(this, "Save analysis to projects", false),
+
+    _dimenFixAction(this, "Enable DimenFix", true),
+    _modeAction(this, "Pushing mode")
 {
     addAction(&_knnAlgorithmAction);
     addAction(&_distanceMetricAction);
     addAction(&_perplexityAction);
+    addAction(&_modeAction);
     
     _computationAction.addActions();
 
     addAction(&_reinitAction);
     addAction(&_saveProbDistAction);
+    addAction(&_dimenFixAction);
 
     _knnAlgorithmAction.setDefaultWidgetFlags(OptionAction::ComboBox);
+    _modeAction.setDefaultWidgetFlags(OptionAction::ComboBox);
     _distanceMetricAction.setDefaultWidgetFlags(OptionAction::ComboBox);
     _perplexityAction.setDefaultWidgetFlags(IntegralAction::SpinBox | IntegralAction::Slider);
 
     _knnAlgorithmAction.initialize(QStringList({ "FLANN", "HNSW", "ANNOY" }), "FLANN");
+    _modeAction.initialize(QStringList({ "CLIPPING", "GAUSSIAN", "RESCALE" }), "CLIPPING");
     _distanceMetricAction.initialize(QStringList({ "Euclidean", "Cosine", "Inner Product", "Manhattan", "Hamming", "Dot" }), "Euclidean");
     _perplexityAction.initialize(2, 50, 30);
 
@@ -42,6 +49,17 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
 
         if (_knnAlgorithmAction.getCurrentText() == "ANNOY")
             _tsneSettingsAction.getKnnParameters().setKnnAlgorithm(hdi::dr::knn_library::KNN_ANNOY);
+    };
+
+    const auto updateMode = [this]() -> void {
+        if (_modeAction.getCurrentText() == "CLIPPING")
+            _tsneSettingsAction.getTsneParameters().setMode("clipping");
+
+        if (_modeAction.getCurrentText() == "GAUSSIAN")
+            _tsneSettingsAction.getTsneParameters().setMode("gaussian");
+
+        if (_modeAction.getCurrentText() == "RESCALE")
+            _tsneSettingsAction.getTsneParameters().setMode("rescale");
     };
 
     const auto updateDistanceMetric = [this]() -> void {
@@ -106,10 +124,21 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
         _computationAction.getUpdateIterationsAction().setEnabled(enable);
         _reinitAction.setEnabled(enable);
         _saveProbDistAction.setEnabled(enable);
+
+        _dimenFixAction.setEnabled(enable);
+        _modeAction.setEnabled(enable);
     };
 
     connect(&_knnAlgorithmAction, &OptionAction::currentIndexChanged, this, [this, updateKnnAlgorithm](const std::int32_t& currentIndex) {
         updateKnnAlgorithm();
+    });
+
+    connect(&_modeAction, &OptionAction::currentIndexChanged, this, [this, updateMode](const std::int32_t& currentIndex) {
+        updateMode();
+    });
+
+    connect(&_dimenFixAction, &ToggleAction::toggled, this, [this, updateCoreUpdate](const bool toggled) {
+        _tsneSettingsAction.getTsneParameters().setDimenfix(toggled);
     });
 
     connect(&_distanceMetricAction, &OptionAction::currentIndexChanged, this, [this, updateDistanceMetric](const std::int32_t& currentIndex) {
@@ -144,6 +173,8 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     updateCoreUpdate();
     updateReadOnly();
 
+    updateMode();
+
     _reinitAction.setEnabled(false);    // only enable after first compute
     _reinitAction.setCheckable(false);  // only enable after first compute
 }
@@ -158,6 +189,9 @@ void GeneralTsneSettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _computationAction.fromParentVariantMap(variantMap);
     _reinitAction.fromParentVariantMap(variantMap);
     _saveProbDistAction.fromParentVariantMap(variantMap);
+
+    _dimenFixAction.fromParentVariantMap(variantMap);
+    _modeAction.fromParentVariantMap(variantMap);
 }
 
 QVariantMap GeneralTsneSettingsAction::toVariantMap() const
@@ -170,6 +204,9 @@ QVariantMap GeneralTsneSettingsAction::toVariantMap() const
     _computationAction.insertIntoVariantMap(variantMap);
     _reinitAction.insertIntoVariantMap(variantMap);
     _saveProbDistAction.insertIntoVariantMap(variantMap);
+
+    _dimenFixAction.insertIntoVariantMap(variantMap);
+    _modeAction.insertIntoVariantMap(variantMap);
 
     return variantMap;
 }
