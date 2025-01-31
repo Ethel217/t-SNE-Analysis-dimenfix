@@ -14,11 +14,13 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _saveProbDistAction(this, "Save analysis to projects", false),
 
     _dimenFixAction(this, "Enable DimenFix", true),
-    _modeAction(this, "Pushing mode")
+    _modeAction(this, "Pushing mode"),
+    _itersAction(this, "Push between iters")
 {
     addAction(&_knnAlgorithmAction);
     addAction(&_distanceMetricAction);
     addAction(&_perplexityAction);
+    addAction(&_itersAction);
     addAction(&_modeAction);
     
     _computationAction.addActions();
@@ -31,11 +33,13 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _modeAction.setDefaultWidgetFlags(OptionAction::ComboBox);
     _distanceMetricAction.setDefaultWidgetFlags(OptionAction::ComboBox);
     _perplexityAction.setDefaultWidgetFlags(IntegralAction::SpinBox | IntegralAction::Slider);
+    _itersAction.setDefaultWidgetFlags(IntegralAction::SpinBox | IntegralAction::Slider);
 
     _knnAlgorithmAction.initialize(QStringList({ "FLANN", "HNSW", "ANNOY" }), "FLANN");
     _modeAction.initialize(QStringList({ "CLIPPING", "GAUSSIAN", "RESCALE" }), "CLIPPING");
     _distanceMetricAction.initialize(QStringList({ "Euclidean", "Cosine", "Inner Product", "Manhattan", "Hamming", "Dot" }), "Euclidean");
     _perplexityAction.initialize(2, 50, 30);
+    _itersAction.initialize(1, 50, 2);
 
     _reinitAction.setToolTip("Instead of recomputing knn, simply re-initialize t-SNE embedding and recompute gradient descent.");
     _saveProbDistAction.setToolTip("When saving the t-SNE analysis with your project, you can compute additional iterations without recomputing similarities from scratch.");
@@ -90,6 +94,10 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
         _tsneSettingsAction.getTsneParameters().setPerplexity(_perplexityAction.getValue());
     };
 
+    const auto updateIters = [this]() -> void {
+        _tsneSettingsAction.getTsneParameters().setIters(_itersAction.getValue());
+    };
+
     const auto updateCoreUpdate = [this]() -> void {
         _tsneSettingsAction.getTsneParameters().setUpdateCore(_computationAction.getUpdateIterationsAction().getValue());
     };
@@ -127,6 +135,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
 
         _dimenFixAction.setEnabled(enable);
         _modeAction.setEnabled(enable);
+        _itersAction.setEnabled(enable);
     };
 
     connect(&_knnAlgorithmAction, &OptionAction::currentIndexChanged, this, [this, updateKnnAlgorithm](const std::int32_t& currentIndex) {
@@ -153,6 +162,10 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
         updatePerplexity();
     });
 
+    connect(&_itersAction, &IntegralAction::valueChanged, this, [this, updateIters](const std::int32_t& value) {
+        updateIters();
+    });
+
     connect(&_computationAction.getUpdateIterationsAction(), &IntegralAction::valueChanged, this, [this, updateCoreUpdate](const std::int32_t& value) {
         updateCoreUpdate();
     });
@@ -174,6 +187,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     updateReadOnly();
 
     updateMode();
+    updateIters();
 
     _reinitAction.setEnabled(false);    // only enable after first compute
     _reinitAction.setCheckable(false);  // only enable after first compute
@@ -192,6 +206,7 @@ void GeneralTsneSettingsAction::fromVariantMap(const QVariantMap& variantMap)
 
     _dimenFixAction.fromParentVariantMap(variantMap);
     _modeAction.fromParentVariantMap(variantMap);
+    _itersAction.fromParentVariantMap(variantMap);
 }
 
 QVariantMap GeneralTsneSettingsAction::toVariantMap() const
@@ -207,6 +222,7 @@ QVariantMap GeneralTsneSettingsAction::toVariantMap() const
 
     _dimenFixAction.insertIntoVariantMap(variantMap);
     _modeAction.insertIntoVariantMap(variantMap);
+    _itersAction.insertIntoVariantMap(variantMap);
 
     return variantMap;
 }

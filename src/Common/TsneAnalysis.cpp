@@ -168,6 +168,7 @@ hdi::dr::TsneParameters TsneWorker::tsneParameters()
 
     tsneParameters._dimenfix = _tsneParameters.getDimenFix();
     tsneParameters._mode = _tsneParameters.getMode();
+    tsneParameters._iters = _tsneParameters.getIters();
 
     return tsneParameters;
 }

@@ -41,6 +41,8 @@ public: // Action getters
 
     ToggleAction& getDimenFixAction() { return _dimenFixAction; }
     OptionAction& getModeAction() { return _modeAction; };
+    IntegralAction& getItersAction() { return  _itersAction;}
+
 
 public: // Serialization
 
@@ -67,4 +69,5 @@ protected:
 
     ToggleAction            _dimenFixAction;     // true or false
     OptionAction            _modeAction;
+    IntegralAction          _itersAction;
 };
