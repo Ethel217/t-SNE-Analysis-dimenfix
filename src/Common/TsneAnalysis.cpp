@@ -30,13 +30,14 @@ TsneWorker::TsneWorker(TsneParameters tsneParameters) :
     _offscreenBuffer(nullptr),
     _shouldStop(false),
     _parentTask(nullptr),
-    _tasks(nullptr)
+    _tasks(nullptr),
+    _labels()
 {
     // Offscreen buffer must be created in the UI thread because it is a QWindow, afterwards we move it
     _offscreenBuffer = new OffscreenBuffer();
 }
 
-TsneWorker::TsneWorker(TsneParameters tsneParameters, KnnParameters knnParameters, const std::vector<float>& data, uint32_t numDimensions, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding) :
+TsneWorker::TsneWorker(TsneParameters tsneParameters, KnnParameters knnParameters, const std::vector<float>& data, uint32_t numDimensions, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding, std::vector<float> labels) :
     TsneWorker(tsneParameters)
 {
     _knnParameters = knnParameters;
@@ -45,12 +46,13 @@ TsneWorker::TsneWorker(TsneParameters tsneParameters, KnnParameters knnParameter
     _numDimensions = numDimensions;
     _data = data;
     _embedding = { static_cast<uint32_t>(_tsneParameters.getNumDimensionsOutput()), _numPoints };
+    _labels = labels;
 
     if (initEmbedding)
         setInitEmbedding(*initEmbedding);
 }
 
-TsneWorker::TsneWorker(TsneParameters parameters, KnnParameters knnParameters, std::vector<float>&& data, uint32_t numDimensions, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding) :
+TsneWorker::TsneWorker(TsneParameters parameters, KnnParameters knnParameters, std::vector<float>&& data, uint32_t numDimensions, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding, std::vector<float> labels) :
     TsneWorker(parameters)
 {
     _knnParameters = knnParameters;
@@ -59,24 +61,26 @@ TsneWorker::TsneWorker(TsneParameters parameters, KnnParameters knnParameters, s
     _numDimensions = numDimensions;
     _data = std::move(data);
     _embedding = { static_cast<uint32_t>(_tsneParameters.getNumDimensionsOutput()), _numPoints };
+    _labels = labels;
 
     if (initEmbedding)
         setInitEmbedding(*initEmbedding);
 }
 
-TsneWorker::TsneWorker(TsneParameters parameters, const std::vector<hdi::data::MapMemEff<uint32_t, float>>& probDist, uint32_t numPoints, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding) :
+TsneWorker::TsneWorker(TsneParameters parameters, const std::vector<hdi::data::MapMemEff<uint32_t, float>>& probDist, uint32_t numPoints, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding, std::vector<float> labels) :
     TsneWorker(parameters)
 {
     _probabilityDistribution = probDist;
     _hasProbabilityDistribution = true;
     _numPoints = numPoints;
     _embedding = { static_cast<uint32_t>(_tsneParameters.getNumDimensionsOutput()), _numPoints };
+    _labels = labels;
 
     if (initEmbedding)
         setInitEmbedding(*initEmbedding);
 }
 
-TsneWorker::TsneWorker(TsneParameters parameters, std::vector<hdi::data::MapMemEff<uint32_t, float>>&& probDist, uint32_t numPoints, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding) :
+TsneWorker::TsneWorker(TsneParameters parameters, std::vector<hdi::data::MapMemEff<uint32_t, float>>&& probDist, uint32_t numPoints, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding, std::vector<float> labels) :
     TsneWorker(parameters)
 {
     _probabilityDistribution = std::move(probDist);
@@ -84,6 +88,7 @@ TsneWorker::TsneWorker(TsneParameters parameters, std::vector<hdi::data::MapMemE
     _numPoints = numPoints;
     _embedding = { static_cast<uint32_t>(_tsneParameters.getNumDimensionsOutput()), _numPoints };
     _tsneParameters.setExaggerationFactor(4 + _numPoints / 60000.0);
+    _labels = labels;
 
     if (initEmbedding)
         setInitEmbedding(*initEmbedding);
@@ -240,23 +245,34 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
             auto params = tsneParameters();
 
             // read txt for labels
-            std::vector<int> labels;
-            std::ifstream labelFile("C:\\Users\\zixuanhan\\Thesis\\Evaluation\\mnist_labels.txt");
-            if (labelFile.is_open())
-            {
-                int label;
-                while (labelFile >> label)
-                {
-                    labels.push_back(label);
-                }
-                labelFile.close();
-            }
-            else
-            {
-                qDebug() << "Error: Could not open labels file.";
-                return;
-            }
-            // create range_limit based on labels and class density
+            // std::vector<int> labels;
+            // std::ifstream labelFile("C:\\Users\\zixuanhan\\Thesis\\Evaluation\\mnist_labels.txt");
+            // if (labelFile.is_open())
+            // {
+            //     int label;
+            //     while (labelFile >> label)
+            //     {
+            //         labels.push_back(label);
+            //     }
+            //     labelFile.close();
+            // }
+            // else
+            // {
+            //     qDebug() << "Error: Could not open labels file.";
+            //     return;
+            // }
+            // change _labels from float to int
+            std::vector<int> labels(_labels.size());
+
+            std::transform(_labels.begin(), _labels.end(), labels.begin(), [](float val) {
+                return static_cast<int>(val);  // Converts float to int (truncation)
+            });
+
+            // TODO: implement GUI for the following options
+            // choice 0: value (fix to exact value)
+            // choice 1: density based for class labels ----- this version now
+            // choice 2: input by user
+            // TODO: can still control by alpha (to be implemented)
             std::vector<hdi::dr::GpgpuSneCompute::Point2D> range_limits(labels.size());
 
             std::map<int, int> label_counts;
@@ -283,14 +299,13 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
                 current_start += range_size;
             }
 
-            // Step 3: Assign ranges to each point based on its label
             for (size_t i = 0; i < labels.size(); ++i)
             {
                 int label = labels[i];
                 range_limits[i] = label_ranges[label];
             }
 
-            // Print debug information
+            // debug info
             qDebug() << "Range limits created for" << labels.size() << "points, with" << label_counts.size() << "distinct labels.";
             qDebug() << "First 10 range_limits:";
             for (size_t i = 0; i < std::min<size_t>(10, range_limits.size()); ++i)
@@ -301,9 +316,9 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
 
             // In case of HSNE, the _probabilityDistribution is a non-symmetric transition matrix and initialize() symmetrizes it here
             if (_hasProbabilityDistribution)
-                _GPGPU_tSNE.initialize(_probabilityDistribution, &_embedding, params, range_limits);
+                _GPGPU_tSNE.initialize(_probabilityDistribution, &_embedding, params, range_limits, labels);
             else
-                _GPGPU_tSNE.initializeWithJointProbabilityDistribution(_probabilityDistribution, &_embedding, params, range_limits);
+                _GPGPU_tSNE.initializeWithJointProbabilityDistribution(_probabilityDistribution, &_embedding, params, range_limits, labels);
 
             qDebug() << "A-tSNE (GPU): Exaggeration factor: " << params._exaggeration_factor << ", exaggeration iterations: " << params._remove_exaggeration_iter << ", exaggeration decay iter: " << params._exponential_decay_iter;
         }
@@ -500,11 +515,11 @@ void TsneAnalysis::deleteWorker()
     }
 }
 
-void TsneAnalysis::startComputation(TsneParameters parameters, const std::vector<hdi::data::MapMemEff<uint32_t, float>>& probDist, uint32_t numPoints, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding, int previousIterations)
+void TsneAnalysis::startComputation(TsneParameters parameters, const std::vector<hdi::data::MapMemEff<uint32_t, float>>& probDist, uint32_t numPoints, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding, int previousIterations, std::vector<float> labels)
 {
     deleteWorker();
 
-    _tsneWorker = new TsneWorker(parameters, probDist, numPoints, initEmbedding);
+    _tsneWorker = new TsneWorker(parameters, probDist, numPoints, initEmbedding, labels);
 
     if (previousIterations >= 0)
         _tsneWorker->setCurrentIteration(previousIterations);
@@ -512,11 +527,11 @@ void TsneAnalysis::startComputation(TsneParameters parameters, const std::vector
     startComputation();
 }
 
-void TsneAnalysis::startComputation(TsneParameters parameters, std::vector<hdi::data::MapMemEff<uint32_t, float>>&& probDist, uint32_t numPoints, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding, int previousIterations)
+void TsneAnalysis::startComputation(TsneParameters parameters, std::vector<hdi::data::MapMemEff<uint32_t, float>>&& probDist, uint32_t numPoints, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding, int previousIterations, std::vector<float> labels)
 {
     deleteWorker();
 
-    _tsneWorker = new TsneWorker(parameters, std::move(probDist), numPoints, initEmbedding);
+    _tsneWorker = new TsneWorker(parameters, std::move(probDist), numPoints, initEmbedding, labels);
 
     if (previousIterations >= 0)
         _tsneWorker->setCurrentIteration(previousIterations);
@@ -524,20 +539,20 @@ void TsneAnalysis::startComputation(TsneParameters parameters, std::vector<hdi::
     startComputation();
 }
 
-void TsneAnalysis::startComputation(TsneParameters parameters, KnnParameters knnParameters, const std::vector<float>& data, uint32_t numDimensions, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding)
+void TsneAnalysis::startComputation(TsneParameters parameters, KnnParameters knnParameters, const std::vector<float>& data, uint32_t numDimensions, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding, std::vector<float> labels)
 {
     deleteWorker();
 
-    _tsneWorker = new TsneWorker(parameters, knnParameters, data, numDimensions, initEmbedding);
+    _tsneWorker = new TsneWorker(parameters, knnParameters, data, numDimensions, initEmbedding, labels);
     
     startComputation();
 }
 
-void TsneAnalysis::startComputation(TsneParameters parameters, KnnParameters knnParameters, std::vector<float>&& data, uint32_t numDimensions, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding)
+void TsneAnalysis::startComputation(TsneParameters parameters, KnnParameters knnParameters, std::vector<float>&& data, uint32_t numDimensions, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding, std::vector<float> labels)
 {
     deleteWorker();
 
-    _tsneWorker = new TsneWorker(parameters, knnParameters, std::move(data), numDimensions, initEmbedding);
+    _tsneWorker = new TsneWorker(parameters, knnParameters, std::move(data), numDimensions, initEmbedding, labels);
     
     startComputation();
 }

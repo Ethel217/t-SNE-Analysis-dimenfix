@@ -15,13 +15,18 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
 
     _dimenFixAction(this, "Enable DimenFix", true),
     _modeAction(this, "Pushing mode"),
-    _itersAction(this, "Push between iters")
+    _itersAction(this, "Push between iters"),
+    _labelInputAction(this, "Input labels"),
+    _rangeLimitInputAction(this, "Input range limit")
 {
     addAction(&_knnAlgorithmAction);
     addAction(&_distanceMetricAction);
     addAction(&_perplexityAction);
     addAction(&_itersAction);
     addAction(&_modeAction);
+
+    addAction(&_labelInputAction);
+    addAction(&_rangeLimitInputAction);
     
     _computationAction.addActions();
 
@@ -136,6 +141,9 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
         _dimenFixAction.setEnabled(enable);
         _modeAction.setEnabled(enable);
         _itersAction.setEnabled(enable);
+
+        _rangeLimitInputAction.setEnabled(enable);
+        _labelInputAction.setEnabled(enable);
     };
 
     connect(&_knnAlgorithmAction, &OptionAction::currentIndexChanged, this, [this, updateKnnAlgorithm](const std::int32_t& currentIndex) {
@@ -149,6 +157,40 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     connect(&_dimenFixAction, &ToggleAction::toggled, this, [this, updateCoreUpdate](const bool toggled) {
         _tsneSettingsAction.getTsneParameters().setDimenfix(toggled);
     });
+
+    _rangeLimitInputAction.setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
+        if (dataset->getDataType() == PointType)
+        {
+            const auto pointDataset = Dataset<Points>(dataset);
+            if (pointDataset->getNumDimensions() >= 2)
+                return true;
+            
+            return false;
+        }
+
+        return false;
+
+        });
+
+    // connect(&_rangeLimitInputAction, &DatasetPickerAction::datasetPicked , this, [this](mv::Dataset<mv::DatasetImpl> pickedDataset) {
+    //     _rangeLimitInputAction.setPointsDataset(pickedDataset);
+    // });
+
+    _labelInputAction.setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
+        if (dataset->getDataType() == PointType)
+        {
+            const auto pointDataset = Dataset<Points>(dataset);
+            if (pointDataset->getNumDimensions() == 1)
+                return true;
+            
+            return false;
+        }
+        return false;
+    });
+
+    // connect(&_labelInputAction, &DatasetPickerAction::datasetPicked , this, [this](mv::Dataset<mv::DatasetImpl> pickedDataset) {
+    //     _labelInputAction.setPointsDataset(pickedDataset);
+    // });
 
     connect(&_distanceMetricAction, &OptionAction::currentIndexChanged, this, [this, updateDistanceMetric](const std::int32_t& currentIndex) {
         updateDistanceMetric();
@@ -193,6 +235,20 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _reinitAction.setCheckable(false);  // only enable after first compute
 }
 
+std::vector<float> GeneralTsneSettingsAction::getLabel(size_t numPoints)
+{
+    assert(numPoints > 0);
+    std::vector<float> initLabels(numPoints);
+    
+    auto initData = _labelInputAction.getCurrentDataset<Points>();
+
+    qDebug() << "Labels are loading... " << initData->getGuiName();
+
+    initData->populateDataForDimensions(initLabels, std::vector<int32_t>{ 0 });
+
+    return initLabels;
+}
+
 void GeneralTsneSettingsAction::fromVariantMap(const QVariantMap& variantMap)
 {
     GroupAction::fromVariantMap(variantMap);
@@ -207,6 +263,8 @@ void GeneralTsneSettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _dimenFixAction.fromParentVariantMap(variantMap);
     _modeAction.fromParentVariantMap(variantMap);
     _itersAction.fromParentVariantMap(variantMap);
+    _rangeLimitInputAction.fromParentVariantMap(variantMap);
+    _labelInputAction.fromParentVariantMap(variantMap); // TODO: labels might not be available
 }
 
 QVariantMap GeneralTsneSettingsAction::toVariantMap() const
@@ -223,6 +281,9 @@ QVariantMap GeneralTsneSettingsAction::toVariantMap() const
     _dimenFixAction.insertIntoVariantMap(variantMap);
     _modeAction.insertIntoVariantMap(variantMap);
     _itersAction.insertIntoVariantMap(variantMap);
+
+    _rangeLimitInputAction.insertIntoVariantMap(variantMap);
+    _labelInputAction.insertIntoVariantMap(variantMap);
 
     return variantMap;
 }

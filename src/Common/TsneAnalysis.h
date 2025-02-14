@@ -50,13 +50,13 @@ private:
     TsneWorker(TsneParameters tsneParameters);
 public:
     // The tsne object will compute knn and a probablility distribution before starting the embedding 
-    TsneWorker(TsneParameters tsneParameters, KnnParameters knnParameters, const std::vector<float>& data, uint32_t numDimensions, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding);
+    TsneWorker(TsneParameters tsneParameters, KnnParameters knnParameters, const std::vector<float>& data, uint32_t numDimensions, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding, std::vector<float> labels);
     // The tsne object will compute knn and a probablility distribution before starting the embedding, moving the input data
-    TsneWorker(TsneParameters tsneParameters, KnnParameters knnParameters, std::vector<float>&& data, uint32_t numDimensions, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding);
+    TsneWorker(TsneParameters tsneParameters, KnnParameters knnParameters, std::vector<float>&& data, uint32_t numDimensions, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding, std::vector<float> labels);
     // The tsne object expects a probDist that is not symmetrized, no knn are computed
-    TsneWorker(TsneParameters tsneParameters, const std::vector<hdi::data::MapMemEff<uint32_t, float>>& probDist, uint32_t numPoints, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding);
+    TsneWorker(TsneParameters tsneParameters, const std::vector<hdi::data::MapMemEff<uint32_t, float>>& probDist, uint32_t numPoints, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding, std::vector<float> labels);
     // The tsne object expects a probDist that is not symmetrized, no knn are computed, moving the probDist
-    TsneWorker(TsneParameters tsneParameters, std::vector<hdi::data::MapMemEff<uint32_t, float>>&& probDist, uint32_t numPoints, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding);
+    TsneWorker(TsneParameters tsneParameters, std::vector<hdi::data::MapMemEff<uint32_t, float>>&& probDist, uint32_t numPoints, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding, std::vector<float> labels);
     ~TsneWorker();
 
     void createTasks();
@@ -108,6 +108,8 @@ private:
     TsneData                                _outEmbedding;                  /** Transfer embedding data array */
     OffscreenBuffer*                        _offscreenBuffer;               /** Offscreen OpenGL buffer required to run the gradient descent */
     bool                                    _shouldStop;                    /** Termination flags */
+    std::vector<float>                      _labels;
+    std::vector<float>                      _range_limits;
 
 private: 
     mv::Task*                               _parentTask;                    /** Task: parent */
@@ -124,13 +126,13 @@ public:
 public: // Interactions
     
     // Compute embedding based on pre-computed similarites
-    void startComputation(TsneParameters parameters, const std::vector<hdi::data::MapMemEff<uint32_t, float>>& probDist, uint32_t numPoints, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding = nullptr, int iterations = -1);
+    void startComputation(TsneParameters parameters, const std::vector<hdi::data::MapMemEff<uint32_t, float>>& probDist, uint32_t numPoints, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding = nullptr, int iterations = -1, std::vector<float> labels = {});
     // Compute embedding based on pre-computed similarites, moves the input probDist
-    void startComputation(TsneParameters parameters, std::vector<hdi::data::MapMemEff<uint32_t, float>>&& probDist, uint32_t numPoints, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding = nullptr, int iterations = -1);
+    void startComputation(TsneParameters parameters, std::vector<hdi::data::MapMemEff<uint32_t, float>>&& probDist, uint32_t numPoints, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding = nullptr, int iterations = -1, std::vector<float> labels = {});
     // Compute similarities (aknn search) and embedding
-    void startComputation(TsneParameters parameters, KnnParameters knnParameters, const std::vector<float>& data, uint32_t numDimensions, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding = nullptr);
+    void startComputation(TsneParameters parameters, KnnParameters knnParameters, const std::vector<float>& data, uint32_t numDimensions, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding = nullptr, std::vector<float> labels = {});
     // Compute similarities (aknn search) and embedding, moves the input data
-    void startComputation(TsneParameters parameters, KnnParameters knnParameters, std::vector<float>&& data, uint32_t numDimensions, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding = nullptr);
+    void startComputation(TsneParameters parameters, KnnParameters knnParameters, std::vector<float>&& data, uint32_t numDimensions, const hdi::data::Embedding<float>::scalar_vector_type* initEmbedding = nullptr, std::vector<float> labels = {});
     
     void continueComputation(int previousIterations);
     void stopComputation();
@@ -138,6 +140,8 @@ public: // Interactions
 public: // Setter
     void setTask(mv::Task* task);
     void setInitEmbedding(const hdi::data::Embedding<float>::scalar_vector_type& initEmbedding);
+    void setLabels();
+    void setRangeLimits();
 
 public: // Getter
     int getNumIterations() const { return (_tsneWorker) ? _tsneWorker->getNumIterations() : -1; };

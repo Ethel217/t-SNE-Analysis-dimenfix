@@ -3,6 +3,7 @@
 #include "actions/IntegralAction.h"
 #include "actions/OptionAction.h"
 #include "actions/ToggleAction.h"
+#include "actions/DatasetPickerAction.h"
 
 #include "TsneComputationAction.h"
 
@@ -27,6 +28,7 @@ public:
      */
     GeneralTsneSettingsAction(TsneSettingsAction& tsneSettingsAction);
 
+    std::vector<float> getLabel(size_t numPoints); // TODO: num_points check should be here
 public: // Action getters
 
     TsneSettingsAction& getTsneSettingsAction() { return _tsneSettingsAction; };
@@ -35,13 +37,16 @@ public: // Action getters
     IntegralAction& getNumIterationsAction() { return _computationAction.getNumIterationsAction(); };
     IntegralAction& getNumberOfComputatedIterationsAction() { return _computationAction.getNumberOfComputatedIterationsAction(); };
     IntegralAction& getPerplexityAction() { return _perplexityAction; };
-    TsneComputationAction& getComputationAction() { return _computationAction; }
-    ToggleAction& getReinitAction() { return _reinitAction; }
-    ToggleAction& getSaveProbDistAction() { return _saveProbDistAction; }
+    TsneComputationAction& getComputationAction() { return _computationAction; };
+    ToggleAction& getReinitAction() { return _reinitAction; };
+    ToggleAction& getSaveProbDistAction() { return _saveProbDistAction; };
 
-    ToggleAction& getDimenFixAction() { return _dimenFixAction; }
+    ToggleAction& getDimenFixAction() { return _dimenFixAction; };
     OptionAction& getModeAction() { return _modeAction; };
-    IntegralAction& getItersAction() { return  _itersAction;}
+    IntegralAction& getItersAction() { return  _itersAction;};
+
+    DatasetPickerAction& getLabelInputAction() { return _labelInputAction; };
+    DatasetPickerAction& getRangeLimitInputAction() { return _rangeLimitInputAction; };
 
 
 public: // Serialization
@@ -70,4 +75,7 @@ protected:
     ToggleAction            _dimenFixAction;     // true or false
     OptionAction            _modeAction;
     IntegralAction          _itersAction;
+
+    DatasetPickerAction     _labelInputAction;
+    DatasetPickerAction     _rangeLimitInputAction;
 };

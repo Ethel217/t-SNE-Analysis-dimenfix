@@ -1,3 +1,10 @@
+# Notes on using Dimenfix ver
+
+labels are required (for now!)
+Upload labels as a separate, 1d dataset input
+
+range limit - also required 2d dataset input
+
 # t-SNE & HSNE Analysis  [![Actions Status](https://github.com/ManiVaultStudio/t-SNE-Analysis/actions/workflows/build.yml/badge.svg)](https://github.com/ManiVaultStudio/t-SNE-Analysis/actions)
 
 t-SNE and HSNE analysis plugins for [ManiVault](https://github.com/ManiVaultStudio/core).

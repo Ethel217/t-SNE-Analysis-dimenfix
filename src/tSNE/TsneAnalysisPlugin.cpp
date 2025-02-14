@@ -210,9 +210,11 @@ void TsneAnalysisPlugin::startComputation()
     // Init embedding: random or set from other dataset, e.g. PCA
     auto initEmbedding = _tsneSettingsAction->getInitalEmbeddingSettingsAction().getInitEmbedding(numPoints);
 
+    auto labels = _tsneSettingsAction->getGeneralTsneSettingsAction().getLabel(numPoints);
+
     _dataPreparationTask.setFinished();
 
-    _tsneAnalysis.startComputation(_tsneSettingsAction->getTsneParameters(), _tsneSettingsAction->getKnnParameters(), std::move(data), numEnabledDimensions, &initEmbedding);
+    _tsneAnalysis.startComputation(_tsneSettingsAction->getTsneParameters(), _tsneSettingsAction->getKnnParameters(), std::move(data), numEnabledDimensions, &initEmbedding, labels);
 }
 
 void TsneAnalysisPlugin::reinitializeComputation()
@@ -234,8 +236,9 @@ void TsneAnalysisPlugin::reinitializeComputation()
     const auto numPoints = getOutputDataset<Points>()->getNumPoints();
 
     auto initEmbedding = initSettings.getInitEmbedding(numPoints);
+    auto labels = _tsneSettingsAction->getGeneralTsneSettingsAction().getLabel(numPoints);
 
-    _tsneAnalysis.startComputation(_tsneSettingsAction->getTsneParameters(), std::move(_probDistMatrix), numPoints, &initEmbedding);
+    _tsneAnalysis.startComputation(_tsneSettingsAction->getTsneParameters(), std::move(_probDistMatrix), numPoints, &initEmbedding, -1, labels);
 }
 
 void TsneAnalysisPlugin::continueComputation()
@@ -255,8 +258,10 @@ void TsneAnalysisPlugin::continueComputation()
         std::vector<float> currentEmbeddingPositions;
         currentEmbeddingPositions.resize(2ull * currentEmbedding->getNumPoints());
         currentEmbedding->populateDataForDimensions<std::vector<float>, std::vector<unsigned int>>(currentEmbeddingPositions, { 0, 1 });
+        const auto numPoints = getOutputDataset<Points>()->getNumPoints();
+        auto labels = _tsneSettingsAction->getGeneralTsneSettingsAction().getLabel(numPoints);
 
-        _tsneAnalysis.startComputation(_tsneSettingsAction->getTsneParameters(), std::move(_probDistMatrix), currentEmbedding->getNumPoints(), &currentEmbeddingPositions, _tsneSettingsAction->getGeneralTsneSettingsAction().getNumberOfComputatedIterationsAction().getValue());
+        _tsneAnalysis.startComputation(_tsneSettingsAction->getTsneParameters(), std::move(_probDistMatrix), currentEmbedding->getNumPoints(), &currentEmbeddingPositions, _tsneSettingsAction->getGeneralTsneSettingsAction().getNumberOfComputatedIterationsAction().getValue(), labels);
     }
     else
     {
