@@ -16,6 +16,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _dimenFixAction(this, "Enable DimenFix", true),
     _modeAction(this, "Pushing mode"),
     _itersAction(this, "Push between iters"),
+    _fixSelectionAction(this, "Fixed Axis"),
     _labelInputAction(this, "Input labels"),
     _rangeLimitInputAction(this, "Input range limit")
 {
@@ -24,6 +25,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     addAction(&_perplexityAction);
     addAction(&_itersAction);
     addAction(&_modeAction);
+    addAction(&_fixSelectionAction);
 
     addAction(&_labelInputAction);
     addAction(&_rangeLimitInputAction);
@@ -36,12 +38,14 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
 
     _knnAlgorithmAction.setDefaultWidgetFlags(OptionAction::ComboBox);
     _modeAction.setDefaultWidgetFlags(OptionAction::ComboBox);
+    _fixSelectionAction.setDefaultWidgetFlags(OptionAction::ComboBox);
     _distanceMetricAction.setDefaultWidgetFlags(OptionAction::ComboBox);
     _perplexityAction.setDefaultWidgetFlags(IntegralAction::SpinBox | IntegralAction::Slider);
     _itersAction.setDefaultWidgetFlags(IntegralAction::SpinBox | IntegralAction::Slider);
 
     _knnAlgorithmAction.initialize(QStringList({ "FLANN", "HNSW", "ANNOY" }), "FLANN");
     _modeAction.initialize(QStringList({ "CLIPPING", "GAUSSIAN", "RESCALE" }), "CLIPPING");
+    _fixSelectionAction.initialize(QStringList({ "class_label", "feature_value", "input" }), "class_label");
     _distanceMetricAction.initialize(QStringList({ "Euclidean", "Cosine", "Inner Product", "Manhattan", "Hamming", "Dot" }), "Euclidean");
     _perplexityAction.initialize(2, 50, 30);
     _itersAction.initialize(1, 50, 2);
@@ -69,6 +73,17 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
 
         if (_modeAction.getCurrentText() == "RESCALE")
             _tsneSettingsAction.getTsneParameters().setMode("rescale");
+    };
+
+    const auto updateFixSelection = [this]() -> void {
+        if (_fixSelectionAction.getCurrentText() == "class_label")
+            _tsneSettingsAction.getTsneParameters().setFixSelection("class_label");
+
+        if (_fixSelectionAction.getCurrentText() == "feature_value")
+            _tsneSettingsAction.getTsneParameters().setFixSelection("feature_value");
+
+        if (_fixSelectionAction.getCurrentText() == "input")
+            _tsneSettingsAction.getTsneParameters().setFixSelection("input");
     };
 
     const auto updateDistanceMetric = [this]() -> void {
@@ -141,6 +156,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
         _dimenFixAction.setEnabled(enable);
         _modeAction.setEnabled(enable);
         _itersAction.setEnabled(enable);
+        _fixSelectionAction.setEnabled(enable);
 
         _rangeLimitInputAction.setEnabled(enable);
         _labelInputAction.setEnabled(enable);
@@ -152,6 +168,10 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
 
     connect(&_modeAction, &OptionAction::currentIndexChanged, this, [this, updateMode](const std::int32_t& currentIndex) {
         updateMode();
+    });
+
+    connect(&_fixSelectionAction, &OptionAction::currentIndexChanged, this, [this, updateFixSelection](const std::int32_t& currentIndex) {
+        updateFixSelection();
     });
 
     connect(&_dimenFixAction, &ToggleAction::toggled, this, [this, updateCoreUpdate](const bool toggled) {
@@ -263,6 +283,7 @@ void GeneralTsneSettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _dimenFixAction.fromParentVariantMap(variantMap);
     _modeAction.fromParentVariantMap(variantMap);
     _itersAction.fromParentVariantMap(variantMap);
+    _fixSelectionAction.fromParentVariantMap(variantMap);
     _rangeLimitInputAction.fromParentVariantMap(variantMap);
     _labelInputAction.fromParentVariantMap(variantMap); // TODO: labels might not be available
 }
@@ -281,6 +302,7 @@ QVariantMap GeneralTsneSettingsAction::toVariantMap() const
     _dimenFixAction.insertIntoVariantMap(variantMap);
     _modeAction.insertIntoVariantMap(variantMap);
     _itersAction.insertIntoVariantMap(variantMap);
+    _fixSelectionAction.insertIntoVariantMap(variantMap);
 
     _rangeLimitInputAction.insertIntoVariantMap(variantMap);
     _labelInputAction.insertIntoVariantMap(variantMap);

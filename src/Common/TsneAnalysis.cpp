@@ -174,6 +174,7 @@ hdi::dr::TsneParameters TsneWorker::tsneParameters()
     tsneParameters._dimenfix = _tsneParameters.getDimenFix();
     tsneParameters._mode = _tsneParameters.getMode();
     tsneParameters._iters = _tsneParameters.getIters();
+    tsneParameters._fix_selection = _tsneParameters.getFixSelection();
 
     return tsneParameters;
 }
@@ -268,51 +269,59 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
                 return static_cast<int>(val);  // Converts float to int (truncation)
             });
 
-            // TODO: implement GUI for the following options
             // choice 0: value (fix to exact value)
             // choice 1: density based for class labels ----- this version now
             // choice 2: input by user
             // TODO: can still control by alpha (to be implemented)
+            std::string fix_sel = _tsneParameters.getFixSelection();
             std::vector<hdi::dr::GpgpuSneCompute::Point2D> range_limits(labels.size());
+            if (fix_sel == "class_label") {
+                std::map<int, int> label_counts;
+                for (int label : labels)
+                {
+                    label_counts[label]++;
+                }
 
-            std::map<int, int> label_counts;
-            for (int label : labels)
-            {
-                label_counts[label]++;
+                std::map<int, hdi::dr::GpgpuSneCompute::Point2D> label_ranges;
+                float current_start = 0.0f;
+                const float total_range = 100.0f;
+
+                for (const auto& pair : label_counts)
+                {
+                    int label = pair.first;
+                    int count = pair.second;
+
+                    // Calculate proportional size of the range
+                    float proportion = static_cast<float>(count) / labels.size();
+                    float range_size = proportion * total_range;
+
+                    // Assign range for the label
+                    label_ranges[label] = {current_start, current_start + range_size};
+                    current_start += range_size;
+                }
+
+                for (size_t i = 0; i < labels.size(); ++i)
+                {
+                    int label = labels[i];
+                    range_limits[i] = label_ranges[label];
+                }
+
+                // debug info
+                qDebug() << "Range limits created for" << labels.size() << "points, with" << label_counts.size() << "distinct labels.";
+                qDebug() << "First 10 range_limits:";
+                for (size_t i = 0; i < std::min<size_t>(10, range_limits.size()); ++i)
+                {
+                    qDebug() << "Point" << i << ": Lower =" << range_limits[i].x
+                            << ", Upper =" << range_limits[i].y;
+                }
+
             }
-
-            std::map<int, hdi::dr::GpgpuSneCompute::Point2D> label_ranges;
-            float current_start = 0.0f;
-            const float total_range = 100.0f;
-
-            for (const auto& pair : label_counts)
-            {
-                int label = pair.first;
-                int count = pair.second;
-
-                // Calculate proportional size of the range
-                float proportion = static_cast<float>(count) / labels.size();
-                float range_size = proportion * total_range;
-
-                // Assign range for the label
-                label_ranges[label] = {current_start, current_start + range_size};
-                current_start += range_size;
+            else if (fix_sel == "feature_value") { // and input selection is not empty, 1d
+                // TODO
             }
-
-            for (size_t i = 0; i < labels.size(); ++i)
-            {
-                int label = labels[i];
-                range_limits[i] = label_ranges[label];
+            else if (fix_sel == "input") {// TODO: if input range limit is not empty, 2d
             }
-
-            // debug info
-            qDebug() << "Range limits created for" << labels.size() << "points, with" << label_counts.size() << "distinct labels.";
-            qDebug() << "First 10 range_limits:";
-            for (size_t i = 0; i < std::min<size_t>(10, range_limits.size()); ++i)
-            {
-                qDebug() << "Point" << i << ": Lower =" << range_limits[i].x
-                        << ", Upper =" << range_limits[i].y;
-            }
+            
 
             // In case of HSNE, the _probabilityDistribution is a non-symmetric transition matrix and initialize() symmetrizes it here
             if (_hasProbabilityDistribution)

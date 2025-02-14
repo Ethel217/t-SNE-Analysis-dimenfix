@@ -44,6 +44,7 @@ public: // Action getters
     ToggleAction& getDimenFixAction() { return _dimenFixAction; };
     OptionAction& getModeAction() { return _modeAction; };
     IntegralAction& getItersAction() { return  _itersAction;};
+    OptionAction& getFixSelectionAction() { return _fixSelectionAction; };
 
     DatasetPickerAction& getLabelInputAction() { return _labelInputAction; };
     DatasetPickerAction& getRangeLimitInputAction() { return _rangeLimitInputAction; };
@@ -75,6 +76,7 @@ protected:
     ToggleAction            _dimenFixAction;     // true or false
     OptionAction            _modeAction;
     IntegralAction          _itersAction;
+    OptionAction            _fixSelectionAction;
 
     DatasetPickerAction     _labelInputAction;
     DatasetPickerAction     _rangeLimitInputAction;
