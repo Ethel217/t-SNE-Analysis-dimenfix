@@ -45,6 +45,7 @@ public: // Action getters
     OptionAction& getModeAction() { return _modeAction; };
     IntegralAction& getItersAction() { return  _itersAction;};
     OptionAction& getFixSelectionAction() { return _fixSelectionAction; };
+    OptionAction& getClassOrderAction() { return _classOrderAction; };
 
     DatasetPickerAction& getLabelInputAction() { return _labelInputAction; };
     DatasetPickerAction& getRangeLimitInputAction() { return _rangeLimitInputAction; };
@@ -77,6 +78,7 @@ protected:
     OptionAction            _modeAction;
     IntegralAction          _itersAction;
     OptionAction            _fixSelectionAction;
+    OptionAction            _classOrderAction;
 
     DatasetPickerAction     _labelInputAction;
     DatasetPickerAction     _rangeLimitInputAction;

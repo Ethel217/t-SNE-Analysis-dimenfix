@@ -175,6 +175,7 @@ hdi::dr::TsneParameters TsneWorker::tsneParameters()
     tsneParameters._mode = _tsneParameters.getMode();
     tsneParameters._iters = _tsneParameters.getIters();
     tsneParameters._fix_selection = _tsneParameters.getFixSelection();
+    tsneParameters._class_order = _tsneParameters.getClassOrder();
 
     return tsneParameters;
 }

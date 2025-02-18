@@ -24,7 +24,8 @@ public:
         _dimenFix(true),
         _mode("clipping"),
         _iters(1),
-        _fix_selection("class_label")
+        _fix_selection("class_label"),
+        _class_order("random")
     {
 
     }
@@ -43,6 +44,7 @@ public:
     void setMode(std::string mode) { _mode = mode;  }
     void setIters(int iters) { _iters = iters; }
     void setFixSelection(std::string fix_selection) {_fix_selection = fix_selection;}
+    void setClassOrder(std::string class_order) { _class_order = class_order; }
 
     int getNumIterations() const { return _numIterations; }
     int getPerplexity() const { return _perplexity; }
@@ -58,6 +60,7 @@ public:
     int getIters() const { return _iters; }
     std::string getMode() const { return _mode; }
     std::string getFixSelection() const {return _fix_selection;}
+    std::string getClassOrder() const { return _class_order; }
 
 private:
     int _numIterations;
@@ -73,6 +76,7 @@ private:
     int _iters;
     std::string _mode;
     std::string _fix_selection;
+    std::string _class_order;
 
     int _updateCore;        // Gradient descent iterations after which the embedding data set in ManiVault's core will be updated
 };

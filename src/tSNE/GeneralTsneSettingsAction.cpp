@@ -18,7 +18,8 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _itersAction(this, "Push between iters"),
     _fixSelectionAction(this, "Fixed Axis"),
     _labelInputAction(this, "Input labels"),
-    _rangeLimitInputAction(this, "Input range limit")
+    _rangeLimitInputAction(this, "Input range limit"),
+    _classOrderAction(this, "Class ordering")
 {
     addAction(&_knnAlgorithmAction);
     addAction(&_distanceMetricAction);
@@ -26,6 +27,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     addAction(&_itersAction);
     addAction(&_modeAction);
     addAction(&_fixSelectionAction);
+    addAction(&_classOrderAction);
 
     addAction(&_labelInputAction);
     addAction(&_rangeLimitInputAction);
@@ -35,6 +37,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     addAction(&_reinitAction);
     addAction(&_saveProbDistAction);
     addAction(&_dimenFixAction);
+    
 
     _knnAlgorithmAction.setDefaultWidgetFlags(OptionAction::ComboBox);
     _modeAction.setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -42,10 +45,12 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _distanceMetricAction.setDefaultWidgetFlags(OptionAction::ComboBox);
     _perplexityAction.setDefaultWidgetFlags(IntegralAction::SpinBox | IntegralAction::Slider);
     _itersAction.setDefaultWidgetFlags(IntegralAction::SpinBox | IntegralAction::Slider);
+    _classOrderAction.setDefaultWidgetFlags(OptionAction::ComboBox);
 
     _knnAlgorithmAction.initialize(QStringList({ "FLANN", "HNSW", "ANNOY" }), "FLANN");
     _modeAction.initialize(QStringList({ "CLIPPING", "GAUSSIAN", "RESCALE" }), "CLIPPING");
     _fixSelectionAction.initialize(QStringList({ "class_label", "feature_value", "input" }), "class_label");
+    _classOrderAction.initialize(QStringList({ "random", "avg", "disable" }), "random");
     _distanceMetricAction.initialize(QStringList({ "Euclidean", "Cosine", "Inner Product", "Manhattan", "Hamming", "Dot" }), "Euclidean");
     _perplexityAction.initialize(2, 50, 30);
     _itersAction.initialize(1, 50, 2);
@@ -73,6 +78,17 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
 
         if (_modeAction.getCurrentText() == "RESCALE")
             _tsneSettingsAction.getTsneParameters().setMode("rescale");
+    };
+
+    const auto updateClassOrder = [this]() -> void {
+        if (_classOrderAction.getCurrentText() == "random")
+            _tsneSettingsAction.getTsneParameters().setClassOrder("random");
+
+        if (_classOrderAction.getCurrentText() == "avg")
+            _tsneSettingsAction.getTsneParameters().setClassOrder("avg");
+
+        if (_classOrderAction.getCurrentText() == "disable")
+            _tsneSettingsAction.getTsneParameters().setClassOrder("disable");
     };
 
     const auto updateFixSelection = [this]() -> void {
@@ -155,6 +171,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
 
         _dimenFixAction.setEnabled(enable);
         _modeAction.setEnabled(enable);
+        _classOrderAction.setEnabled(enable);
         _itersAction.setEnabled(enable);
         _fixSelectionAction.setEnabled(enable);
 
@@ -168,6 +185,10 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
 
     connect(&_modeAction, &OptionAction::currentIndexChanged, this, [this, updateMode](const std::int32_t& currentIndex) {
         updateMode();
+    });
+
+    connect(&_classOrderAction, &OptionAction::currentIndexChanged, this, [this, updateClassOrder](const std::int32_t& currentIndex) {
+        updateClassOrder();
     });
 
     connect(&_fixSelectionAction, &OptionAction::currentIndexChanged, this, [this, updateFixSelection](const std::int32_t& currentIndex) {
@@ -249,6 +270,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     updateReadOnly();
 
     updateMode();
+    updateClassOrder();
     updateIters();
 
     _reinitAction.setEnabled(false);    // only enable after first compute
@@ -282,6 +304,7 @@ void GeneralTsneSettingsAction::fromVariantMap(const QVariantMap& variantMap)
 
     _dimenFixAction.fromParentVariantMap(variantMap);
     _modeAction.fromParentVariantMap(variantMap);
+    _classOrderAction.fromParentVariantMap(variantMap);
     _itersAction.fromParentVariantMap(variantMap);
     _fixSelectionAction.fromParentVariantMap(variantMap);
     _rangeLimitInputAction.fromParentVariantMap(variantMap);
@@ -301,6 +324,7 @@ QVariantMap GeneralTsneSettingsAction::toVariantMap() const
 
     _dimenFixAction.insertIntoVariantMap(variantMap);
     _modeAction.insertIntoVariantMap(variantMap);
+    _classOrderAction.insertIntoVariantMap(variantMap);
     _itersAction.insertIntoVariantMap(variantMap);
     _fixSelectionAction.insertIntoVariantMap(variantMap);
 
