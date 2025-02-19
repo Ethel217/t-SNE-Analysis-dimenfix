@@ -211,10 +211,11 @@ void TsneAnalysisPlugin::startComputation()
     auto initEmbedding = _tsneSettingsAction->getInitalEmbeddingSettingsAction().getInitEmbedding(numPoints);
 
     auto labels = _tsneSettingsAction->getGeneralTsneSettingsAction().getLabel(numPoints);
+    auto initRanges = _tsneSettingsAction->getGeneralTsneSettingsAction().getInitRanges(numPoints);
 
     _dataPreparationTask.setFinished();
 
-    _tsneAnalysis.startComputation(_tsneSettingsAction->getTsneParameters(), _tsneSettingsAction->getKnnParameters(), std::move(data), numEnabledDimensions, &initEmbedding, labels);
+    _tsneAnalysis.startComputation(_tsneSettingsAction->getTsneParameters(), _tsneSettingsAction->getKnnParameters(), std::move(data), numEnabledDimensions, &initEmbedding, labels, initRanges);
 }
 
 void TsneAnalysisPlugin::reinitializeComputation()
@@ -237,8 +238,9 @@ void TsneAnalysisPlugin::reinitializeComputation()
 
     auto initEmbedding = initSettings.getInitEmbedding(numPoints);
     auto labels = _tsneSettingsAction->getGeneralTsneSettingsAction().getLabel(numPoints);
+    auto initRanges = _tsneSettingsAction->getGeneralTsneSettingsAction().getInitRanges(numPoints);
 
-    _tsneAnalysis.startComputation(_tsneSettingsAction->getTsneParameters(), std::move(_probDistMatrix), numPoints, &initEmbedding, -1, labels);
+    _tsneAnalysis.startComputation(_tsneSettingsAction->getTsneParameters(), std::move(_probDistMatrix), numPoints, &initEmbedding, -1, labels, initRanges);
 }
 
 void TsneAnalysisPlugin::continueComputation()
@@ -249,8 +251,10 @@ void TsneAnalysisPlugin::continueComputation()
 
     _tsneSettingsAction->getComputationAction().getRunningAction().setChecked(true);
 
-    if (_tsneAnalysis.canContinue())
+    if (_tsneAnalysis.canContinue()) {
+        std::cout << "regular continue" << std::endl;
         _tsneAnalysis.continueComputation(_tsneSettingsAction->getTsneParameters().getNumIterations());
+    }
     else if (_probDistMatrix.size() > 0)
     {
         auto currentEmbedding = getOutputDataset<Points>();
@@ -260,8 +264,9 @@ void TsneAnalysisPlugin::continueComputation()
         currentEmbedding->populateDataForDimensions<std::vector<float>, std::vector<unsigned int>>(currentEmbeddingPositions, { 0, 1 });
         const auto numPoints = getOutputDataset<Points>()->getNumPoints();
         auto labels = _tsneSettingsAction->getGeneralTsneSettingsAction().getLabel(numPoints);
+        auto initRanges = _tsneSettingsAction->getGeneralTsneSettingsAction().getInitRanges(numPoints);
 
-        _tsneAnalysis.startComputation(_tsneSettingsAction->getTsneParameters(), std::move(_probDistMatrix), currentEmbedding->getNumPoints(), &currentEmbeddingPositions, _tsneSettingsAction->getGeneralTsneSettingsAction().getNumberOfComputatedIterationsAction().getValue(), labels);
+        _tsneAnalysis.startComputation(_tsneSettingsAction->getTsneParameters(), std::move(_probDistMatrix), currentEmbedding->getNumPoints(), &currentEmbeddingPositions, _tsneSettingsAction->getGeneralTsneSettingsAction().getNumberOfComputatedIterationsAction().getValue(), labels, initRanges);
     }
     else
     {

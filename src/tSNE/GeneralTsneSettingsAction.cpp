@@ -19,24 +19,31 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _fixSelectionAction(this, "Fixed Axis"),
     _labelInputAction(this, "Input labels"),
     _rangeLimitInputAction(this, "Input range limit"),
-    _classOrderAction(this, "Class ordering")
+    _rangeLimitLAction(this, "Lower range limit"),
+    _rangeLimitUAction(this, "Upper range limit"),
+    _classOrderAction(this, "Class ordering"),
+    _switchAxisAction(this, "Switch to new axis")
 {
     addAction(&_knnAlgorithmAction);
     addAction(&_distanceMetricAction);
     addAction(&_perplexityAction);
     addAction(&_itersAction);
+    addAction(&_dimenFixAction);
+    addAction(&_switchAxisAction);
     addAction(&_modeAction);
     addAction(&_fixSelectionAction);
     addAction(&_classOrderAction);
 
     addAction(&_labelInputAction);
     addAction(&_rangeLimitInputAction);
+    addAction(&_rangeLimitLAction);
+    addAction(&_rangeLimitUAction);
     
     _computationAction.addActions();
 
     addAction(&_reinitAction);
     addAction(&_saveProbDistAction);
-    addAction(&_dimenFixAction);
+    
     
 
     _knnAlgorithmAction.setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -176,6 +183,8 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
         _fixSelectionAction.setEnabled(enable);
 
         _rangeLimitInputAction.setEnabled(enable);
+        _rangeLimitLAction.setEnabled(enable);
+        _rangeLimitUAction.setEnabled(enable);
         _labelInputAction.setEnabled(enable);
     };
 
@@ -199,11 +208,15 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
         _tsneSettingsAction.getTsneParameters().setDimenfix(toggled);
     });
 
+    connect(&_switchAxisAction, &ToggleAction::toggled, this, [this, updateCoreUpdate](const bool toggled) {
+        _tsneSettingsAction.getTsneParameters().setSwitchAxis(toggled);
+    });
+
     _rangeLimitInputAction.setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
         if (dataset->getDataType() == PointType)
         {
             const auto pointDataset = Dataset<Points>(dataset);
-            if (pointDataset->getNumDimensions() >= 2)
+            if (pointDataset->getNumDimensions() >= 1) // TODO: didnt check size alignment
                 return true;
             
             return false;
@@ -213,9 +226,13 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
 
         });
 
-    // connect(&_rangeLimitInputAction, &DatasetPickerAction::datasetPicked , this, [this](mv::Dataset<mv::DatasetImpl> pickedDataset) {
-    //     _rangeLimitInputAction.setPointsDataset(pickedDataset);
-    // });
+    connect(&_rangeLimitInputAction, &DatasetPickerAction::datasetPicked , this, [this](mv::Dataset<mv::DatasetImpl> pickedDataset) {
+        _rangeLimitLAction.setPointsDataset(pickedDataset);
+        _rangeLimitUAction.setPointsDataset(pickedDataset);
+
+        _rangeLimitLAction.setCurrentDimensionIndex(0);
+        _rangeLimitUAction.setCurrentDimensionIndex(1);
+    });
 
     _labelInputAction.setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
         if (dataset->getDataType() == PointType)
@@ -291,6 +308,22 @@ std::vector<float> GeneralTsneSettingsAction::getLabel(size_t numPoints)
     return initLabels;
 }
 
+std::vector<float> GeneralTsneSettingsAction::getInitRanges(size_t numPoints)
+{
+    assert(numPoints > 0);
+    std::vector<float> initRanges(numPoints * 2);
+    
+    auto initData = _rangeLimitInputAction.getCurrentDataset<Points>();
+    auto xDim = _rangeLimitLAction.getCurrentDimensionIndex();
+    auto yDim = _rangeLimitUAction.getCurrentDimensionIndex();
+    
+    qDebug() << "Ranges initializing... " << initData->getGuiName();
+
+    initData->populateDataForDimensions(initRanges, std::vector<int32_t>{ xDim, yDim });
+
+    return initRanges;
+}
+
 void GeneralTsneSettingsAction::fromVariantMap(const QVariantMap& variantMap)
 {
     GroupAction::fromVariantMap(variantMap);
@@ -303,11 +336,14 @@ void GeneralTsneSettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _saveProbDistAction.fromParentVariantMap(variantMap);
 
     _dimenFixAction.fromParentVariantMap(variantMap);
+    _switchAxisAction.fromParentVariantMap(variantMap);
     _modeAction.fromParentVariantMap(variantMap);
     _classOrderAction.fromParentVariantMap(variantMap);
     _itersAction.fromParentVariantMap(variantMap);
     _fixSelectionAction.fromParentVariantMap(variantMap);
     _rangeLimitInputAction.fromParentVariantMap(variantMap);
+    _rangeLimitLAction.fromParentVariantMap(variantMap);
+    _rangeLimitUAction.fromParentVariantMap(variantMap);
     _labelInputAction.fromParentVariantMap(variantMap); // TODO: labels might not be available
 }
 
@@ -323,12 +359,15 @@ QVariantMap GeneralTsneSettingsAction::toVariantMap() const
     _saveProbDistAction.insertIntoVariantMap(variantMap);
 
     _dimenFixAction.insertIntoVariantMap(variantMap);
+    _switchAxisAction.insertIntoVariantMap(variantMap);
     _modeAction.insertIntoVariantMap(variantMap);
     _classOrderAction.insertIntoVariantMap(variantMap);
     _itersAction.insertIntoVariantMap(variantMap);
     _fixSelectionAction.insertIntoVariantMap(variantMap);
 
     _rangeLimitInputAction.insertIntoVariantMap(variantMap);
+    _rangeLimitLAction.insertIntoVariantMap(variantMap);
+    _rangeLimitUAction.insertIntoVariantMap(variantMap);
     _labelInputAction.insertIntoVariantMap(variantMap);
 
     return variantMap;

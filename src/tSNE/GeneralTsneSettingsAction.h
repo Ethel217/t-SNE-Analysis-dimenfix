@@ -4,6 +4,7 @@
 #include "actions/OptionAction.h"
 #include "actions/ToggleAction.h"
 #include "actions/DatasetPickerAction.h"
+#include "PointData/DimensionPickerAction.h"
 
 #include "TsneComputationAction.h"
 
@@ -29,6 +30,7 @@ public:
     GeneralTsneSettingsAction(TsneSettingsAction& tsneSettingsAction);
 
     std::vector<float> getLabel(size_t numPoints); // TODO: num_points check should be here
+    std::vector<float> getInitRanges(size_t numPoints);
 public: // Action getters
 
     TsneSettingsAction& getTsneSettingsAction() { return _tsneSettingsAction; };
@@ -46,9 +48,12 @@ public: // Action getters
     IntegralAction& getItersAction() { return  _itersAction;};
     OptionAction& getFixSelectionAction() { return _fixSelectionAction; };
     OptionAction& getClassOrderAction() { return _classOrderAction; };
+    ToggleAction& getSwitchAxisAction() { return _switchAxisAction; };
 
     DatasetPickerAction& getLabelInputAction() { return _labelInputAction; };
     DatasetPickerAction& getRangeLimitInputAction() { return _rangeLimitInputAction; };
+    DimensionPickerAction& getRangeLimitLAction() { return _rangeLimitLAction; };
+    DimensionPickerAction& getRangeLimitUAction() { return _rangeLimitUAction; };
 
 
 public: // Serialization
@@ -79,7 +84,10 @@ protected:
     IntegralAction          _itersAction;
     OptionAction            _fixSelectionAction;
     OptionAction            _classOrderAction;
+    ToggleAction            _switchAxisAction;
 
     DatasetPickerAction     _labelInputAction;
     DatasetPickerAction     _rangeLimitInputAction;
+    DimensionPickerAction   _rangeLimitLAction;
+    DimensionPickerAction   _rangeLimitUAction;
 };
