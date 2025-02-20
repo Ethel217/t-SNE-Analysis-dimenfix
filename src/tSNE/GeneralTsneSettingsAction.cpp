@@ -299,11 +299,18 @@ std::vector<float> GeneralTsneSettingsAction::getLabel(size_t numPoints)
     assert(numPoints > 0);
     std::vector<float> initLabels(numPoints);
     
-    auto initData = _labelInputAction.getCurrentDataset<Points>();
+    if (_labelInputAction.getCurrentDataset().isValid())
+    {
+        auto initData = _labelInputAction.getCurrentDataset<Points>();
 
-    qDebug() << "Labels are loading... " << initData->getGuiName();
+        qDebug() << "Labels are loading... " << initData->getGuiName();
 
-    initData->populateDataForDimensions(initLabels, std::vector<int32_t>{ 0 });
+        initData->populateDataForDimensions(initLabels, std::vector<int32_t>{ 0 });
+    }
+    else
+    {
+        initLabels = std::vector<float>(numPoints, 0.0f);
+    }
 
     return initLabels;
 }
