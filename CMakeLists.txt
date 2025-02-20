@@ -13,8 +13,19 @@ option(MV_SNE_USE_ARTIFACTORY_LIBS "Use the prebuilt libraries from artifactory"
 option(MV_SNE_USE_AVX "Enable AVX support" OFF)
 option(MV_UNITY_BUILD "Combine target source files into batches for faster compilation" OFF)
 set(MV_SNE_OPTIMIZATION_LEVEL "2" CACHE STRING "Optimization level for all targets in release builds, e.g. 0, 1, 2")
-set(VCPKG_BASE_PATH "C:/Users/soumyadeep/FinalPluginSystem/LatestCustomPlugins/DimenFixLayerExplorer/vcpkg" CACHE PATH "Base path for vcpkg")
-set(HDILIB_BASE_PATH "C:/Users/soumyadeep/FinalPluginSystem/LatestCustomPlugins/DimenFixLayerExplorer/HDILib-dimenfix" CACHE PATH "Base path for hdilib")
+#set(VCPKG_BASE_PATH "{PATH_TO_VCPKG_DIR}/vcpkg" CACHE PATH "Base path for vcpkg")
+#set(HDILIB_BASE_PATH "{PATH_TO_LOCAL_HDILIB_DIR}/HDILib-dimenfix" CACHE PATH "Base path for hdilib")
+if(NOT MV_SNE_USE_ARTIFACTORY_LIBS)
+    # check if VCPKG_BASE_PATH and HDILIB_BASE_PATH are defined 
+    if(NOT VCPKG_BASE_PATH)
+        message(FATAL_ERROR "VCPKG_BASE_PATH is required but not defined!")
+    endif()
+
+    if(NOT HDILIB_BASE_PATH)
+        message(FATAL_ERROR "HDILIB_BASE_PATH is required but not defined!")
+    endif()
+endif()
+
 # -----------------------------------------------------------------------------
 # CMake options
 # -----------------------------------------------------------------------------
