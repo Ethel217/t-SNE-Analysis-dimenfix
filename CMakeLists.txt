@@ -100,6 +100,12 @@ endif()
 # -----------------------------------------------------------------------------
  
 find_package(Qt6 COMPONENTS Widgets WebEngineWidgets REQUIRED)
+
+find_package(OpenCV REQUIRED)
+
+if(NOT OpenCV_FOUND)
+    message(FATAL_ERROR "OpenCV not found! Please install OpenCV or set the path correctly.")
+endif()
  
 find_package(ManiVault COMPONENTS Core PointData ImageData CONFIG)
  
