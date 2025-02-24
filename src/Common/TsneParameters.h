@@ -26,6 +26,7 @@ public:
         _iters(1),
         _fix_selection("class_label"),
         _class_order("random"),
+        _alpha(1.0f),
         _switch_axis(false)
     {
 
@@ -43,6 +44,7 @@ public:
 
     void setDimenfix(bool dimenFix) { _dimenFix = dimenFix; }
     void setMode(std::string mode) { _mode = mode;  }
+    void setAlpha(float alpha) { _alpha = alpha; }
     void setIters(int iters) { _iters = iters; }
     void setFixSelection(std::string fix_selection) {_fix_selection = fix_selection;}
     void setClassOrder(std::string class_order) { _class_order = class_order; }
@@ -64,6 +66,7 @@ public:
     std::string getFixSelection() const {return _fix_selection;}
     std::string getClassOrder() const { return _class_order; }
     bool getSwitchAxis() const { return _switch_axis; }
+    float getAlpha() const { return _alpha; }
 
 private:
     int _numIterations;
@@ -81,6 +84,7 @@ private:
     std::string _fix_selection;
     std::string _class_order;
     bool _switch_axis;
+    float _alpha;
 
     int _updateCore;        // Gradient descent iterations after which the embedding data set in ManiVault's core will be updated
 };

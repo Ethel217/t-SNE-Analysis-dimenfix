@@ -22,7 +22,8 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _rangeLimitLAction(this, "Lower range limit"),
     _rangeLimitUAction(this, "Upper range limit"),
     _classOrderAction(this, "Class ordering"),
-    _switchAxisAction(this, "Switch to new axis")
+    _switchAxisAction(this, "Switch to new axis"),
+    _alphaAction(this, "Overlap control")
 {
     addAction(&_knnAlgorithmAction);
     addAction(&_distanceMetricAction);
@@ -33,6 +34,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     addAction(&_modeAction);
     addAction(&_fixSelectionAction);
     addAction(&_classOrderAction);
+    addAction(&_alphaAction);
 
     addAction(&_labelInputAction);
     addAction(&_rangeLimitInputAction);
@@ -53,6 +55,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _perplexityAction.setDefaultWidgetFlags(IntegralAction::SpinBox | IntegralAction::Slider);
     _itersAction.setDefaultWidgetFlags(IntegralAction::SpinBox | IntegralAction::Slider);
     _classOrderAction.setDefaultWidgetFlags(OptionAction::ComboBox);
+    _alphaAction.setDefaultWidgetFlags(DecimalAction::SpinBox | DecimalAction::Slider);
 
     _knnAlgorithmAction.initialize(QStringList({ "FLANN", "HNSW", "ANNOY" }), "FLANN");
     _modeAction.initialize(QStringList({ "CLIPPING", "GAUSSIAN", "RESCALE" }), "CLIPPING");
@@ -61,6 +64,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _distanceMetricAction.initialize(QStringList({ "Euclidean", "Cosine", "Inner Product", "Manhattan", "Hamming", "Dot" }), "Euclidean");
     _perplexityAction.initialize(2, 50, 30);
     _itersAction.initialize(1, 50, 2);
+    _alphaAction.initialize(0.0f, 3.0f, 1.0f);
 
     _reinitAction.setToolTip("Instead of recomputing knn, simply re-initialize t-SNE embedding and recompute gradient descent.");
     _saveProbDistAction.setToolTip("When saving the t-SNE analysis with your project, you can compute additional iterations without recomputing similarities from scratch.");
@@ -129,6 +133,10 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
             _tsneSettingsAction.getKnnParameters().setKnnDistanceMetric(hdi::dr::knn_distance_metric::KNN_METRIC_DOT);
     };
 
+    const auto updateAlpha = [this]() -> void {
+        _tsneSettingsAction.getTsneParameters().setAlpha(_alphaAction.getValue());
+    };
+
     const auto updateNumIterations = [this]() -> void {
         _tsneSettingsAction.getTsneParameters().setNumIterations(_computationAction.getNumIterationsAction().getValue());
     };
@@ -181,6 +189,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
         _classOrderAction.setEnabled(enable);
         _itersAction.setEnabled(enable);
         _fixSelectionAction.setEnabled(enable);
+        _alphaAction.setEnabled(enable);
 
         _rangeLimitInputAction.setEnabled(enable);
         _rangeLimitLAction.setEnabled(enable);
@@ -258,6 +267,10 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
         updateNumIterations();
     });
 
+    connect(&_alphaAction, &DecimalAction::valueChanged, this, [this, updateAlpha](const float& value) {
+        updateAlpha();
+    });
+
     connect(&_perplexityAction, &IntegralAction::valueChanged, this, [this, updatePerplexity](const std::int32_t& value) {
         updatePerplexity();
     });
@@ -289,6 +302,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     updateMode();
     updateClassOrder();
     updateIters();
+    updateAlpha();
 
     _reinitAction.setEnabled(false);    // only enable after first compute
     _reinitAction.setCheckable(false);  // only enable after first compute
@@ -345,6 +359,7 @@ void GeneralTsneSettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _dimenFixAction.fromParentVariantMap(variantMap);
     _switchAxisAction.fromParentVariantMap(variantMap);
     _modeAction.fromParentVariantMap(variantMap);
+    _alphaAction.fromParentVariantMap(variantMap);
     _classOrderAction.fromParentVariantMap(variantMap);
     _itersAction.fromParentVariantMap(variantMap);
     _fixSelectionAction.fromParentVariantMap(variantMap);
@@ -368,6 +383,7 @@ QVariantMap GeneralTsneSettingsAction::toVariantMap() const
     _dimenFixAction.insertIntoVariantMap(variantMap);
     _switchAxisAction.insertIntoVariantMap(variantMap);
     _modeAction.insertIntoVariantMap(variantMap);
+    _alphaAction.insertIntoVariantMap(variantMap);
     _classOrderAction.insertIntoVariantMap(variantMap);
     _itersAction.insertIntoVariantMap(variantMap);
     _fixSelectionAction.insertIntoVariantMap(variantMap);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "actions/IntegralAction.h"
+#include "actions/DecimalAction.h"
 #include "actions/OptionAction.h"
 #include "actions/ToggleAction.h"
 #include "actions/DatasetPickerAction.h"
@@ -45,6 +46,7 @@ public: // Action getters
 
     ToggleAction& getDimenFixAction() { return _dimenFixAction; };
     OptionAction& getModeAction() { return _modeAction; };
+    DecimalAction& getAlphaAction() { return _alphaAction; }
     IntegralAction& getItersAction() { return  _itersAction;};
     OptionAction& getFixSelectionAction() { return _fixSelectionAction; };
     OptionAction& getClassOrderAction() { return _classOrderAction; };
@@ -85,6 +87,7 @@ protected:
     OptionAction            _fixSelectionAction;
     OptionAction            _classOrderAction;
     ToggleAction            _switchAxisAction;
+    DecimalAction           _alphaAction;
 
     DatasetPickerAction     _labelInputAction;
     DatasetPickerAction     _rangeLimitInputAction;
