@@ -67,6 +67,7 @@ public: // Setter
     void setCurrentIteration(int currentIteration);
     void changeThread(QThread* targetThread);
     void updateParams(TsneParameters tsneParameters);
+    void updateArrays(std::vector<float> initRanges, std::vector<float> labels);
 
 public: // Getter
     ProbDistMatrix* getProbabilityDistribution() { return &_probabilityDistribution; };
@@ -146,6 +147,7 @@ public: // Setter
     void setLabels();
     void setRangeLimits();
     void updateParams(TsneParameters tsneParameters);
+    void updateArrays(std::vector<float> initRanges, std::vector<float> labels);
 
 public: // Getter
     int getNumIterations() const { return (_tsneWorker) ? _tsneWorker->getNumIterations() : -1; };

@@ -232,12 +232,6 @@ void TsneWorker::computeSimilarities()
     _tasks->getComputingSimilaritiesTask().setFinished();
 }
 
-void TsneWorker::updateGPGPUSettings() {
-    auto params = tsneParameters();
-    std::cout << params._mode << std::endl;
-    _GPGPU_tSNE.updateParams(params);
-}
-
 std::vector<hdi::dr::GpgpuSneCompute::Point2D> genRanges(std::string fix_sel, int num_points, std::vector<int> labels, float alpha, std::vector<float> _initRanges) {
     std::vector<hdi::dr::GpgpuSneCompute::Point2D> range_limits(num_points);
     if (fix_sel == "class_label") {
@@ -368,6 +362,25 @@ std::vector<hdi::dr::GpgpuSneCompute::Point2D> genRanges(std::string fix_sel, in
         }
     }
     return range_limits;
+}
+
+void TsneWorker::updateGPGPUSettings() {
+    auto params = tsneParameters();
+    std::cout << params._switch_axis << std::endl;
+    _GPGPU_tSNE.updateParams(params);
+    std::vector<int> labels(_labels.size());
+    std::transform(_labels.begin(), _labels.end(), labels.begin(), [](float val) {
+        return static_cast<int>(val);  // Converts float to int (truncation)
+    });
+    std::string fix_sel = _tsneParameters.getFixSelection();
+    std::vector<hdi::dr::GpgpuSneCompute::Point2D> range_limits = genRanges(fix_sel, labels.size(), labels, _tsneParameters.getAlpha(), _initRanges);
+    qDebug() << "First 10 range_limits:";
+    for (size_t i = 0; i < std::min<size_t>(10, range_limits.size()); ++i)
+    {
+        qDebug() << "Point" << i << ": Lower =" << range_limits[i].x
+                << ", Upper =" << range_limits[i].y;
+    }
+    _GPGPU_tSNE.updateArrays(range_limits, labels);
 }
 
 void TsneWorker::computeGradientDescent(uint32_t iterations)
@@ -543,6 +556,12 @@ void TsneWorker::updateParams(TsneParameters tsneParameters) {
     _tsneParameters = tsneParameters;
 }
 
+void TsneWorker::updateArrays(std::vector<float> initRanges, std::vector<float> labels)
+{
+    _initRanges = initRanges;
+    _labels = labels;
+}
+
 void TsneWorker::compute()
 {
     createTasks();
@@ -678,6 +697,12 @@ void TsneAnalysis::updateParams(TsneParameters tsneParameters)
 {
     if (_tsneWorker)
     _tsneWorker->updateParams(tsneParameters);
+}
+
+void TsneAnalysis::updateArrays(std::vector<float> initRanges, std::vector<float> labels)
+{
+    if (_tsneWorker)
+    _tsneWorker->updateArrays(initRanges, labels);
 }
 
 void TsneAnalysis::stopComputation()

@@ -252,11 +252,13 @@ void TsneAnalysisPlugin::continueComputation()
     _tsneSettingsAction->getComputationAction().getRunningAction().setChecked(true);
 
     if (_tsneAnalysis.canContinue()) {
-        // if (_tsneSettingsAction->getGeneralTsneSettingsAction().getSwitchAxisAction() == true) {
-        //     std::cout << "params update" << std::endl;
-        // }
         // param update whenever continue is pressed
         _tsneAnalysis.updateParams(_tsneSettingsAction->getTsneParameters());
+        // TODO: labels, fixed axis -> ranges update
+        const auto numPoints = getOutputDataset<Points>()->getNumPoints();
+        auto labels = _tsneSettingsAction->getGeneralTsneSettingsAction().getLabel(numPoints);
+        auto initRanges = _tsneSettingsAction->getGeneralTsneSettingsAction().getInitRanges(numPoints);
+        _tsneAnalysis.updateArrays(initRanges, labels);
         _tsneAnalysis.continueComputation(_tsneSettingsAction->getTsneParameters().getNumIterations());
     }
     else if (_probDistMatrix.size() > 0)
