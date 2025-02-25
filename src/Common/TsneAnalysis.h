@@ -66,6 +66,7 @@ public: // Setter
     void setInitEmbedding(const hdi::data::Embedding<float>::scalar_vector_type& initEmbedding);
     void setCurrentIteration(int currentIteration);
     void changeThread(QThread* targetThread);
+    void updateParams(TsneParameters tsneParameters);
 
 public: // Getter
     ProbDistMatrix* getProbabilityDistribution() { return &_probabilityDistribution; };
@@ -85,6 +86,7 @@ signals:
 private:
     void computeSimilarities();
     void computeGradientDescent(uint32_t iterations);
+    void updateGPGPUSettings();
     
     void copyEmbeddingOutput();
 
@@ -110,7 +112,7 @@ private:
     bool                                    _shouldStop;                    /** Termination flags */
     std::vector<float>                      _labels;
     std::vector<float>                      _range_limits;
-    std::vector<float>       _initRanges;
+    std::vector<float>                      _initRanges;
 
 private: 
     mv::Task*                               _parentTask;                    /** Task: parent */
@@ -143,6 +145,7 @@ public: // Setter
     void setInitEmbedding(const hdi::data::Embedding<float>::scalar_vector_type& initEmbedding);
     void setLabels();
     void setRangeLimits();
+    void updateParams(TsneParameters tsneParameters);
 
 public: // Getter
     int getNumIterations() const { return (_tsneWorker) ? _tsneWorker->getNumIterations() : -1; };

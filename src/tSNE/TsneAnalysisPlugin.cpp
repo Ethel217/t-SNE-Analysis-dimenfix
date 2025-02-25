@@ -252,7 +252,11 @@ void TsneAnalysisPlugin::continueComputation()
     _tsneSettingsAction->getComputationAction().getRunningAction().setChecked(true);
 
     if (_tsneAnalysis.canContinue()) {
-        std::cout << "regular continue" << std::endl;
+        // if (_tsneSettingsAction->getGeneralTsneSettingsAction().getSwitchAxisAction() == true) {
+        //     std::cout << "params update" << std::endl;
+        // }
+        // param update whenever continue is pressed
+        _tsneAnalysis.updateParams(_tsneSettingsAction->getTsneParameters());
         _tsneAnalysis.continueComputation(_tsneSettingsAction->getTsneParameters().getNumIterations());
     }
     else if (_probDistMatrix.size() > 0)

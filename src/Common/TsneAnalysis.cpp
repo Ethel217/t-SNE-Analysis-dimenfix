@@ -232,6 +232,144 @@ void TsneWorker::computeSimilarities()
     _tasks->getComputingSimilaritiesTask().setFinished();
 }
 
+void TsneWorker::updateGPGPUSettings() {
+    auto params = tsneParameters();
+    std::cout << params._mode << std::endl;
+    _GPGPU_tSNE.updateParams(params);
+}
+
+std::vector<hdi::dr::GpgpuSneCompute::Point2D> genRanges(std::string fix_sel, int num_points, std::vector<int> labels, float alpha, std::vector<float> _initRanges) {
+    std::vector<hdi::dr::GpgpuSneCompute::Point2D> range_limits(num_points);
+    if (fix_sel == "class_label") {
+        std::map<int, int> label_counts;
+        for (int label : labels)
+        {
+            label_counts[label]++;
+        }
+
+        std::map<int, hdi::dr::GpgpuSneCompute::Point2D> label_ranges;
+        // TODO: take any input label type, convert to int
+        float current_start = 0.0f;
+        const float total_range = 100.0f;
+
+        for (const auto& pair : label_counts)
+        {
+            int label = pair.first;
+            int count = pair.second;
+
+            float proportion = static_cast<float>(count) / labels.size();
+            float range_size = proportion * total_range;
+
+            label_ranges[label] = {current_start, current_start + range_size};
+            current_start += range_size;
+        }
+
+        // apply alpha
+        float max_r = -1.0f;
+        float min_r = 1000000.f;
+        for (const auto& pair : label_counts)
+        {
+            int label = pair.first;
+            float r_l = label_ranges[label].x;
+            float r_u = label_ranges[label].y;
+            label_ranges[label].x = -(r_u - r_l) * alpha / 2.0f + (r_u + r_l) / 2.0f;
+            label_ranges[label].y = (r_u - r_l) * alpha / 2.0f + (r_u + r_l) / 2.0f;
+            max_r = std::max(max_r, label_ranges[label].y);
+            min_r = std::min(min_r, label_ranges[label].x);
+        }
+
+        // normalize
+        float range = max_r - min_r;
+        for (const auto& pair : label_counts) {
+            int label = pair.first;
+            float normX = (label_ranges[label].x - min_r) / range * 100.0f;
+            float normY = (label_ranges[label].y - min_r) / range * 100.0f;
+            label_ranges[label].x = normX;
+            label_ranges[label].y = normY;
+        }
+
+        // assign range to each point
+        for (size_t i = 0; i < labels.size(); ++i)
+        {
+            int label = labels[i];
+            range_limits[i] = label_ranges[label];
+        }
+
+        // debug info
+        qDebug() << "Range limits created for" << labels.size() << "points, with" << label_counts.size() << "distinct labels.";
+        
+
+    }
+    else if (fix_sel == "feature_value") {
+        // actually only 1 input dimension is used
+        std::set<float> values;
+        for (size_t i = 0; i < _initRanges.size(); i += 2) {
+            values.insert(_initRanges[i]);
+        }
+
+        std::unordered_map<float, hdi::dr::GpgpuSneCompute::Point2D> range_map;
+        float max_r = FLT_MIN;
+        float min_r = FLT_MAX;
+
+        for (auto it = values.begin(); it != values.end(); ++it) {
+            float cur_val = *it;
+            float next_val;
+            float last_val;
+            if (it == values.begin()) {
+                next_val = *(std::next(it));
+                range_map[cur_val].x = cur_val - (next_val - cur_val) * alpha / 2;
+                range_map[cur_val].y = cur_val + (next_val - cur_val) * alpha / 2;
+            }
+            else if (std::next(it) == values.end()) {
+                last_val = *(std::prev(it));
+                range_map[cur_val].x = cur_val - (cur_val - last_val) * alpha / 2;
+                range_map[cur_val].y = cur_val + (cur_val - last_val) * alpha / 2;
+            }
+            else {
+                next_val = *(std::next(it));
+                last_val = *(std::prev(it));
+                range_map[cur_val].x = cur_val - (cur_val - last_val) * alpha / 2;
+                range_map[cur_val].y = cur_val + (next_val - cur_val) * alpha / 2;
+            }
+            min_r = std::min(min_r, range_map[cur_val].x);
+            max_r = std::max(max_r, range_map[cur_val].y);
+        }
+
+        // assign and normalize
+        float range = (max_r - min_r != 0) ? (max_r - min_r) : 1.0f;
+        for (size_t i = 0; i < _initRanges.size(); i += 2) {
+            float normX = (range_map[_initRanges[i]].x - min_r) / range * 100.0f;
+            float normY = (range_map[_initRanges[i]].y - min_r) / range * 100.0f;
+            range_limits[i/2].x = normX;
+            range_limits[i/2].y = normY;
+        }
+        
+    }
+    else if (fix_sel == "input") {
+        // apply alpha
+        for (size_t i = 0; i < _initRanges.size(); i += 2) {
+            float r_l = _initRanges[i];
+            float r_u = _initRanges[i + 1];
+            _initRanges[i] = -(r_u - r_l) * alpha / 2.0f + (r_u + r_l) / 2.0f;
+            _initRanges[i + 1] = (r_u - r_l) * alpha / 2.0f + (r_u + r_l) / 2.0f;
+        }
+
+        // normalize
+        auto minMax = std::minmax_element(_initRanges.begin(), _initRanges.end());
+        float minVal = *minMax.first;
+        float maxVal = *minMax.second;
+        float range = (maxVal - minVal != 0) ? (maxVal - minVal) : 1.0f;
+        
+        for (size_t i = 0; i < _initRanges.size(); i += 2) {
+            float normX = (_initRanges[i] - minVal) / range * 100.0f;
+            float normY = (_initRanges[i + 1] - minVal) / range * 100.0f;
+            range_limits[i/2].x = normX;
+            range_limits[i/2].y = normY;
+        }
+    }
+    return range_limits;
+}
+
 void TsneWorker::computeGradientDescent(uint32_t iterations)
 {
     if (_shouldStop)
@@ -255,23 +393,6 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
         {
             auto params = tsneParameters();
 
-            // read txt for labels
-            // std::vector<int> labels;
-            // std::ifstream labelFile("C:\\Users\\zixuanhan\\Thesis\\Evaluation\\mnist_labels.txt");
-            // if (labelFile.is_open())
-            // {
-            //     int label;
-            //     while (labelFile >> label)
-            //     {
-            //         labels.push_back(label);
-            //     }
-            //     labelFile.close();
-            // }
-            // else
-            // {
-            //     qDebug() << "Error: Could not open labels file.";
-            //     return;
-            // }
             // change _labels from float to int
             std::vector<int> labels(_labels.size());
 
@@ -283,135 +404,8 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
             // choice 1: density based for class labels
             // choice 2: input by user
             std::string fix_sel = _tsneParameters.getFixSelection();
-            std::vector<hdi::dr::GpgpuSneCompute::Point2D> range_limits(labels.size());
-            if (fix_sel == "class_label") {
-                std::map<int, int> label_counts;
-                for (int label : labels)
-                {
-                    label_counts[label]++;
-                }
-
-                std::map<int, hdi::dr::GpgpuSneCompute::Point2D> label_ranges;
-                // TODO: take any input label type, convert to int
-                float current_start = 0.0f;
-                const float total_range = 100.0f;
-
-                for (const auto& pair : label_counts)
-                {
-                    int label = pair.first;
-                    int count = pair.second;
-
-                    float proportion = static_cast<float>(count) / labels.size();
-                    float range_size = proportion * total_range;
-
-                    label_ranges[label] = {current_start, current_start + range_size};
-                    current_start += range_size;
-                }
-
-                // apply alpha
-                float max_r = -1.0f;
-                float min_r = 1000000.f;
-                for (const auto& pair : label_counts)
-                {
-                    int label = pair.first;
-                    float r_l = label_ranges[label].x;
-                    float r_u = label_ranges[label].y;
-                    label_ranges[label].x = -(r_u - r_l) * _tsneParameters.getAlpha() / 2.0f + (r_u + r_l) / 2.0f;
-                    label_ranges[label].y = (r_u - r_l) * _tsneParameters.getAlpha() / 2.0f + (r_u + r_l) / 2.0f;
-                    max_r = std::max(max_r, label_ranges[label].y);
-                    min_r = std::min(min_r, label_ranges[label].x);
-                }
-
-                // normalize
-                float range = max_r - min_r;
-                for (const auto& pair : label_counts) {
-                    int label = pair.first;
-                    float normX = (label_ranges[label].x - min_r) / range * 100.0f;
-                    float normY = (label_ranges[label].y - min_r) / range * 100.0f;
-                    label_ranges[label].x = normX;
-                    label_ranges[label].y = normY;
-                }
-
-                // assign range to each point
-                for (size_t i = 0; i < labels.size(); ++i)
-                {
-                    int label = labels[i];
-                    range_limits[i] = label_ranges[label];
-                }
-
-                // debug info
-                qDebug() << "Range limits created for" << labels.size() << "points, with" << label_counts.size() << "distinct labels.";
-                
-
-            }
-            else if (fix_sel == "feature_value") {
-                // actually only 1 input dimension is used
-                // TODO: create ranges based on alpha
-                std::set<float> values;
-                for (size_t i = 0; i < _initRanges.size(); i += 2) {
-                    values.insert(_initRanges[i]);
-                }
-
-                std::unordered_map<float, hdi::dr::GpgpuSneCompute::Point2D> range_map;
-                float max_r = FLT_MIN;
-                float min_r = FLT_MAX;
-
-                for (auto it = values.begin(); it != values.end(); ++it) {
-                    float cur_val = *it;
-                    float next_val;
-                    float last_val;
-                    if (it == values.begin()) {
-                        next_val = *(std::next(it));
-                        range_map[cur_val].x = cur_val - (next_val - cur_val) * _tsneParameters.getAlpha() / 2;
-                        range_map[cur_val].y = cur_val + (next_val - cur_val) * _tsneParameters.getAlpha() / 2;
-                    }
-                    else if (std::next(it) == values.end()) {
-                        last_val = *(std::prev(it));
-                        range_map[cur_val].x = cur_val - (cur_val - last_val) * _tsneParameters.getAlpha() / 2;
-                        range_map[cur_val].y = cur_val + (cur_val - last_val) * _tsneParameters.getAlpha() / 2;
-                    }
-                    else {
-                        next_val = *(std::next(it));
-                        last_val = *(std::prev(it));
-                        range_map[cur_val].x = cur_val - (cur_val - last_val) * _tsneParameters.getAlpha() / 2;
-                        range_map[cur_val].y = cur_val + (next_val - cur_val) * _tsneParameters.getAlpha() / 2;
-                    }
-                    min_r = std::min(min_r, range_map[cur_val].x);
-                    max_r = std::max(max_r, range_map[cur_val].y);
-                }
-
-                // assign and normalize
-                float range = (max_r - min_r != 0) ? (max_r - min_r) : 1.0f;
-                for (size_t i = 0; i < _initRanges.size(); i += 2) {
-                    float normX = (range_map[_initRanges[i]].x - min_r) / range * 100.0f;
-                    float normY = (range_map[_initRanges[i]].y - min_r) / range * 100.0f;
-                    range_limits[i/2].x = normX;
-                    range_limits[i/2].y = normY;
-                }
-                
-            }
-            else if (fix_sel == "input") {
-                // apply alpha
-                for (size_t i = 0; i < _initRanges.size(); i += 2) {
-                    float r_l = _initRanges[i];
-                    float r_u = _initRanges[i + 1];
-                    _initRanges[i] = -(r_u - r_l) * _tsneParameters.getAlpha() / 2.0f + (r_u + r_l) / 2.0f;
-                    _initRanges[i + 1] = (r_u - r_l) * _tsneParameters.getAlpha() / 2.0f + (r_u + r_l) / 2.0f;
-                }
-
-                // normalize
-                auto minMax = std::minmax_element(_initRanges.begin(), _initRanges.end());
-                float minVal = *minMax.first;
-                float maxVal = *minMax.second;
-                float range = (maxVal - minVal != 0) ? (maxVal - minVal) : 1.0f;
-                
-                for (size_t i = 0; i < _initRanges.size(); i += 2) {
-                    float normX = (_initRanges[i] - minVal) / range * 100.0f;
-                    float normY = (_initRanges[i + 1] - minVal) / range * 100.0f;
-                    range_limits[i/2].x = normX;
-                    range_limits[i/2].y = normY;
-                }
-            }
+            std::vector<hdi::dr::GpgpuSneCompute::Point2D> range_limits = genRanges(fix_sel, labels.size(), labels, _tsneParameters.getAlpha(), _initRanges);
+            
 
             qDebug() << "First 10 range_limits:";
             for (size_t i = 0; i < std::min<size_t>(10, range_limits.size()); ++i)
@@ -545,6 +539,10 @@ void TsneWorker::copyEmbeddingOutput()
     _outEmbedding.assign(_numPoints, _tsneParameters.getNumDimensionsOutput(), _embedding.getContainer());
 }
 
+void TsneWorker::updateParams(TsneParameters tsneParameters) {
+    _tsneParameters = tsneParameters;
+}
+
 void TsneWorker::compute()
 {
     createTasks();
@@ -584,6 +582,8 @@ void TsneWorker::continueComputation(uint32_t iterations)
     connect(_parentTask, &Task::requestAbort, this, [this]() -> void { _shouldStop = true; }, Qt::DirectConnection);
 
     _shouldStop = false;
+
+    updateGPGPUSettings();
 
     computeGradientDescent(iterations);
 
@@ -672,6 +672,12 @@ void TsneAnalysis::continueComputation(int iterations)
     _tsneWorker->changeThread(&_workerThread);
 
     emit continueWorker(iterations);
+}
+
+void TsneAnalysis::updateParams(TsneParameters tsneParameters)
+{
+    if (_tsneWorker)
+    _tsneWorker->updateParams(tsneParameters);
 }
 
 void TsneAnalysis::stopComputation()
