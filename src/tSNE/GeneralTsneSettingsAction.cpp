@@ -23,7 +23,9 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _rangeLimitUAction(this, "Upper range limit"),
     _classOrderAction(this, "Class ordering"),
     _switchAxisAction(this, "Switch to new axis"),
-    _alphaAction(this, "Overlap control")
+    _alphaAction(this, "Overlap control"),
+    _betaAction(this, "Compression control"),
+    _sigmaAction(this, "Movement control")
 {
     addAction(&_knnAlgorithmAction);
     addAction(&_distanceMetricAction);
@@ -35,6 +37,8 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     addAction(&_fixSelectionAction);
     addAction(&_classOrderAction);
     addAction(&_alphaAction);
+    addAction(&_betaAction);
+    addAction(&_sigmaAction);
 
     addAction(&_labelInputAction);
     addAction(&_rangeLimitInputAction);
@@ -56,6 +60,8 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _itersAction.setDefaultWidgetFlags(IntegralAction::SpinBox | IntegralAction::Slider);
     _classOrderAction.setDefaultWidgetFlags(OptionAction::ComboBox);
     _alphaAction.setDefaultWidgetFlags(DecimalAction::SpinBox | DecimalAction::Slider);
+    _betaAction.setDefaultWidgetFlags(DecimalAction::SpinBox | DecimalAction::Slider);
+    _sigmaAction.setDefaultWidgetFlags(DecimalAction::SpinBox | DecimalAction::Slider);
 
     _knnAlgorithmAction.initialize(QStringList({ "FLANN", "HNSW", "ANNOY" }), "FLANN");
     _modeAction.initialize(QStringList({ "CLIPPING", "GAUSSIAN", "RESCALE" }), "CLIPPING");
@@ -65,6 +71,8 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _perplexityAction.initialize(2, 50, 30);
     _itersAction.initialize(1, 50, 2);
     _alphaAction.initialize(0.0f, 3.0f, 1.0f);
+    _betaAction.initialize(0.1f, 1.0f, 0.7f);
+    _sigmaAction.initialize(0.1f, 1.0f, 0.5f);
 
     _reinitAction.setToolTip("Instead of recomputing knn, simply re-initialize t-SNE embedding and recompute gradient descent.");
     _saveProbDistAction.setToolTip("When saving the t-SNE analysis with your project, you can compute additional iterations without recomputing similarities from scratch.");
@@ -137,6 +145,14 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
         _tsneSettingsAction.getTsneParameters().setAlpha(_alphaAction.getValue());
     };
 
+    const auto updateBeta = [this]() -> void {
+        _tsneSettingsAction.getTsneParameters().setBeta(_betaAction.getValue());
+    };
+
+    const auto updateSigma = [this]() -> void {
+        _tsneSettingsAction.getTsneParameters().setSigma(_sigmaAction.getValue());
+    };
+
     const auto updateNumIterations = [this]() -> void {
         _tsneSettingsAction.getTsneParameters().setNumIterations(_computationAction.getNumIterationsAction().getValue());
     };
@@ -190,6 +206,8 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
         _itersAction.setEnabled(enable);
         _fixSelectionAction.setEnabled(enable);
         _alphaAction.setEnabled(enable);
+        _betaAction.setEnabled(enable);
+        _sigmaAction.setEnabled(enable);
 
         _rangeLimitInputAction.setEnabled(enable);
         _rangeLimitLAction.setEnabled(enable);
@@ -271,6 +289,14 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
         updateAlpha();
     });
 
+    connect(&_betaAction, &DecimalAction::valueChanged, this, [this, updateBeta](const float& value) {
+        updateBeta();
+    });
+
+    connect(&_sigmaAction, &DecimalAction::valueChanged, this, [this, updateSigma](const float& value) {
+        updateSigma();
+    });
+
     connect(&_perplexityAction, &IntegralAction::valueChanged, this, [this, updatePerplexity](const std::int32_t& value) {
         updatePerplexity();
     });
@@ -303,6 +329,8 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     updateClassOrder();
     updateIters();
     updateAlpha();
+    updateSigma();
+    updateBeta();
 
     _reinitAction.setEnabled(false);    // only enable after first compute
     _reinitAction.setCheckable(false);  // only enable after first compute
@@ -360,6 +388,8 @@ void GeneralTsneSettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _switchAxisAction.fromParentVariantMap(variantMap);
     _modeAction.fromParentVariantMap(variantMap);
     _alphaAction.fromParentVariantMap(variantMap);
+    _betaAction.fromParentVariantMap(variantMap);
+    _sigmaAction.fromParentVariantMap(variantMap);
     _classOrderAction.fromParentVariantMap(variantMap);
     _itersAction.fromParentVariantMap(variantMap);
     _fixSelectionAction.fromParentVariantMap(variantMap);
@@ -384,6 +414,8 @@ QVariantMap GeneralTsneSettingsAction::toVariantMap() const
     _switchAxisAction.insertIntoVariantMap(variantMap);
     _modeAction.insertIntoVariantMap(variantMap);
     _alphaAction.insertIntoVariantMap(variantMap);
+    _betaAction.insertIntoVariantMap(variantMap);
+    _sigmaAction.insertIntoVariantMap(variantMap);
     _classOrderAction.insertIntoVariantMap(variantMap);
     _itersAction.insertIntoVariantMap(variantMap);
     _fixSelectionAction.insertIntoVariantMap(variantMap);

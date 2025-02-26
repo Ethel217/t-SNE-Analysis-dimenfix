@@ -181,6 +181,8 @@ hdi::dr::TsneParameters TsneWorker::tsneParameters()
     tsneParameters._dimenfix = _tsneParameters.getDimenFix();
     tsneParameters._mode = _tsneParameters.getMode();
     tsneParameters._alpha = _tsneParameters.getAlpha();
+    tsneParameters._beta = _tsneParameters.getBeta();
+    tsneParameters._sigma = _tsneParameters.getSigma();
     tsneParameters._iters = _tsneParameters.getIters();
     tsneParameters._fix_selection = _tsneParameters.getFixSelection();
     tsneParameters._class_order = _tsneParameters.getClassOrder();
@@ -366,7 +368,7 @@ std::vector<hdi::dr::GpgpuSneCompute::Point2D> genRanges(std::string fix_sel, in
 
 void TsneWorker::updateGPGPUSettings() {
     auto params = tsneParameters();
-    std::cout << params._switch_axis << std::endl;
+    // std::cout << params._switch_axis << std::endl;
     _GPGPU_tSNE.updateParams(params);
     std::vector<int> labels(_labels.size());
     std::transform(_labels.begin(), _labels.end(), labels.begin(), [](float val) {
@@ -603,7 +605,7 @@ void TsneWorker::continueComputation(uint32_t iterations)
 
     _shouldStop = false;
 
-    // updateGPGPUSettings();
+    updateGPGPUSettings();
 
     computeGradientDescent(iterations);
 

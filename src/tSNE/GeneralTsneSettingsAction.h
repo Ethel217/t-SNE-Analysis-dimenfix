@@ -47,6 +47,8 @@ public: // Action getters
     ToggleAction& getDimenFixAction() { return _dimenFixAction; };
     OptionAction& getModeAction() { return _modeAction; };
     DecimalAction& getAlphaAction() { return _alphaAction; }
+    DecimalAction& getBetaAction() { return _betaAction; }
+    DecimalAction& getSigmaAction() { return _sigmaAction; }
     IntegralAction& getItersAction() { return  _itersAction;};
     OptionAction& getFixSelectionAction() { return _fixSelectionAction; };
     OptionAction& getClassOrderAction() { return _classOrderAction; };
@@ -88,6 +90,8 @@ protected:
     OptionAction            _classOrderAction;
     ToggleAction            _switchAxisAction;
     DecimalAction           _alphaAction;
+    DecimalAction           _betaAction;
+    DecimalAction           _sigmaAction;
 
     DatasetPickerAction     _labelInputAction;
     DatasetPickerAction     _rangeLimitInputAction;
