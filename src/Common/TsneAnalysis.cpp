@@ -436,6 +436,7 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
 
             qDebug() << "A-tSNE (GPU): Exaggeration factor: " << params._exaggeration_factor << ", exaggeration iterations: " << params._remove_exaggeration_iter << ", exaggeration decay iter: " << params._exponential_decay_iter;
         }
+        updateGPGPUSettings();
     };
 
     auto initCPUTSNE = [this]() {
@@ -602,7 +603,7 @@ void TsneWorker::continueComputation(uint32_t iterations)
 
     _shouldStop = false;
 
-    updateGPGPUSettings();
+    // updateGPGPUSettings();
 
     computeGradientDescent(iterations);
 
@@ -701,8 +702,10 @@ void TsneAnalysis::updateParams(TsneParameters tsneParameters)
 
 void TsneAnalysis::updateArrays(std::vector<float> initRanges, std::vector<float> labels)
 {
-    if (_tsneWorker)
-    _tsneWorker->updateArrays(initRanges, labels);
+    if (_tsneWorker) {
+        _tsneWorker->changeThread(&_workerThread);
+        _tsneWorker->updateArrays(initRanges, labels);
+    }
 }
 
 void TsneAnalysis::stopComputation()
