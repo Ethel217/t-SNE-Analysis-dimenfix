@@ -5,6 +5,7 @@ if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.27.0")
 endif()
  
 project("SNE-Analyses" C CXX)
+# set(PROJECT "SNE-Analyses")
  
 # -----------------------------------------------------------------------------
 # User options
@@ -107,7 +108,7 @@ if(NOT OpenCV_FOUND)
     message(FATAL_ERROR "OpenCV not found! Please install OpenCV or set the path correctly.")
 endif()
  
-find_package(ManiVault COMPONENTS Core PointData ImageData CONFIG)
+find_package(ManiVault COMPONENTS Core PointData ClusterData ImageData CONFIG)
  
 find_package(lz4 CONFIG)
 if(NOT ${lz4_FOUND})

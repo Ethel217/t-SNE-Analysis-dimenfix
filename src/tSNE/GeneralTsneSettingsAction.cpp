@@ -1,6 +1,9 @@
 #include "GeneralTsneSettingsAction.h"
 #include "TsneSettingsAction.h"
 
+#include <ClusterData/ClusterData.h>
+#include <Dataset.h>
+
 using namespace mv::gui;
 
 GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSettingsAction) :
@@ -270,6 +273,9 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
             
             return false;
         }
+        else if (dataset->getDataType() == ClusterType) {
+            return true;
+        }
         return false;
     });
 
@@ -343,11 +349,26 @@ std::vector<float> GeneralTsneSettingsAction::getLabel(size_t numPoints)
     
     if (_labelInputAction.getCurrentDataset().isValid())
     {
-        auto initData = _labelInputAction.getCurrentDataset<Points>();
+        if (_labelInputAction.getCurrentDataset()->getDataType() == ClusterType) {
+            // map it to float
+            auto clusters = Dataset<Clusters>(_labelInputAction.getCurrentDataset());
+            float counter = 0.0f;
+            for (auto& cluster : clusters->getClusters()) {
+                for (const auto globalPointIndex : cluster.getIndices())
+                {
+                    initLabels[(int)globalPointIndex] = counter;
+                }
+                counter += 1.0f;
+            }
+        }
+        else {
+            auto initData = _labelInputAction.getCurrentDataset<Points>();
 
-        qDebug() << "Labels are loading... " << initData->getGuiName();
-
-        initData->populateDataForDimensions(initLabels, std::vector<int32_t>{ 0 });
+            qDebug() << "Labels are loading... " << initData->getGuiName();
+    
+            initData->populateDataForDimensions(initLabels, std::vector<int32_t>{ 0 });
+        }
+        
     }
     else
     {
@@ -396,7 +417,7 @@ void GeneralTsneSettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _rangeLimitInputAction.fromParentVariantMap(variantMap);
     _rangeLimitLAction.fromParentVariantMap(variantMap);
     _rangeLimitUAction.fromParentVariantMap(variantMap);
-    _labelInputAction.fromParentVariantMap(variantMap); // TODO: labels might not be available
+    _labelInputAction.fromParentVariantMap(variantMap);
 }
 
 QVariantMap GeneralTsneSettingsAction::toVariantMap() const

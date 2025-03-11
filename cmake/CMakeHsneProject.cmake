@@ -56,6 +56,7 @@ target_link_libraries(${HSNE_PLUGIN} PRIVATE Qt6::WebEngineWidgets)
 target_link_libraries(${HSNE_PLUGIN} PRIVATE ManiVault::Core)
 target_link_libraries(${HSNE_PLUGIN} PRIVATE ManiVault::PointData)
 target_link_libraries(${HSNE_PLUGIN} PRIVATE ManiVault::ImageData)
+target_link_libraries(${HSNE_PLUGIN} PRIVATE ManiVault::ClusterData)
  
 target_link_libraries(${HSNE_PLUGIN} PRIVATE ${OPENGL_LIBRARIES})
  

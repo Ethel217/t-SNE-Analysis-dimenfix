@@ -52,6 +52,7 @@ target_link_libraries(${TSNE_PLUGIN} PRIVATE Qt6::WebEngineWidgets)
  
 target_link_libraries(${TSNE_PLUGIN} PRIVATE ManiVault::Core)
 target_link_libraries(${TSNE_PLUGIN} PRIVATE ManiVault::PointData)
+target_link_libraries(${TSNE_PLUGIN} PRIVATE ManiVault::ClusterData)
  
 target_link_libraries(${TSNE_PLUGIN} PRIVATE ${OPENGL_LIBRARIES})
  
