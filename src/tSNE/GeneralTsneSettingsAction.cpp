@@ -3,6 +3,7 @@
 
 #include <ClusterData/ClusterData.h>
 #include <Dataset.h>
+#include <chrono>
 
 using namespace mv::gui;
 
@@ -353,13 +354,31 @@ std::vector<float> GeneralTsneSettingsAction::getLabel(size_t numPoints)
             // map it to float
             auto clusters = Dataset<Clusters>(_labelInputAction.getCurrentDataset());
             float counter = 0.0f;
-            for (auto& cluster : clusters->getClusters()) {
-                for (const auto globalPointIndex : cluster.getIndices())
-                {
-                    initLabels[(int)globalPointIndex] = counter;
-                }
-                counter += 1.0f;
+            std::vector<float> clusterValues;
+            for (size_t i = 0; i < clusters->getClusters().size(); ++i) {
+                clusterValues.push_back(counter);
+                counter += 1.0f; 
             }
+            
+            // Use the current time as the random seed
+            unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+            std::mt19937 g(seed);
+            std::shuffle(clusterValues.begin(), clusterValues.end(), g);
+
+            size_t idx = 0;
+            for (auto& cluster : clusters->getClusters()) {
+                for (const auto globalPointIndex : cluster.getIndices()) {
+                    initLabels[(int)globalPointIndex] = clusterValues[idx];
+                }
+                idx += 1;
+            }
+            // for (auto& cluster : clusters->getClusters()) {
+            //     for (const auto globalPointIndex : cluster.getIndices())
+            //     {
+            //         initLabels[(int)globalPointIndex] = counter;
+            //     }
+            //     counter += 1.0f;
+            // }
         }
         else {
             auto initData = _labelInputAction.getCurrentDataset<Points>();
