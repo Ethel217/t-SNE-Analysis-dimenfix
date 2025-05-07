@@ -18,6 +18,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _saveProbDistAction(this, "Save analysis to projects", false),
 
     _dimenFixAction(this, "Enable DimenFix", true),
+    _densityAction(this, "Ranges based on density", true),
     _modeAction(this, "Pushing mode"),
     _itersAction(this, "Push between iters"),
     _fixSelectionAction(this, "Fixed Axis"),
@@ -36,6 +37,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     addAction(&_perplexityAction);
     addAction(&_itersAction);
     addAction(&_dimenFixAction);
+    addAction(&_densityAction);
     addAction(&_switchAxisAction);
     addAction(&_modeAction);
     addAction(&_fixSelectionAction);
@@ -205,6 +207,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
         _saveProbDistAction.setEnabled(enable);
 
         _dimenFixAction.setEnabled(enable);
+        _densityAction.setEnabled(enable);
         _modeAction.setEnabled(enable);
         _classOrderAction.setEnabled(enable);
         _itersAction.setEnabled(enable);
@@ -237,6 +240,10 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
 
     connect(&_dimenFixAction, &ToggleAction::toggled, this, [this, updateCoreUpdate](const bool toggled) {
         _tsneSettingsAction.getTsneParameters().setDimenfix(toggled);
+    });
+
+    connect(&_densityAction, &ToggleAction::toggled, this, [this, updateCoreUpdate](const bool toggled) {
+        _tsneSettingsAction.getTsneParameters().setDensity(toggled);
     });
 
     connect(&_switchAxisAction, &ToggleAction::toggled, this, [this, updateCoreUpdate](const bool toggled) {
@@ -427,6 +434,7 @@ void GeneralTsneSettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _dimenFixAction.fromParentVariantMap(variantMap);
     _switchAxisAction.fromParentVariantMap(variantMap);
     _modeAction.fromParentVariantMap(variantMap);
+    _densityAction.fromParentVariantMap(variantMap);
     _alphaAction.fromParentVariantMap(variantMap);
     _betaAction.fromParentVariantMap(variantMap);
     _sigmaAction.fromParentVariantMap(variantMap);
@@ -453,6 +461,7 @@ QVariantMap GeneralTsneSettingsAction::toVariantMap() const
     _dimenFixAction.insertIntoVariantMap(variantMap);
     _switchAxisAction.insertIntoVariantMap(variantMap);
     _modeAction.insertIntoVariantMap(variantMap);
+    _densityAction.insertIntoVariantMap(variantMap);
     _alphaAction.insertIntoVariantMap(variantMap);
     _betaAction.insertIntoVariantMap(variantMap);
     _sigmaAction.insertIntoVariantMap(variantMap);

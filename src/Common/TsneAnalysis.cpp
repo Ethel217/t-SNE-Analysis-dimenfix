@@ -234,7 +234,7 @@ void TsneWorker::computeSimilarities()
     _tasks->getComputingSimilaritiesTask().setFinished();
 }
 
-std::vector<hdi::dr::GpgpuSneCompute::Point2D> genRanges(std::string fix_sel, int num_points, std::vector<int> labels, float alpha, std::vector<float> _initRanges) {
+std::vector<hdi::dr::GpgpuSneCompute::Point2D> genRanges(std::string fix_sel, int num_points, std::vector<int> labels, float alpha, std::vector<float> _initRanges, bool density) {
     std::vector<hdi::dr::GpgpuSneCompute::Point2D> range_limits(num_points);
     if (fix_sel == "class_label") {
         std::map<int, int> label_counts;
@@ -252,8 +252,14 @@ std::vector<hdi::dr::GpgpuSneCompute::Point2D> genRanges(std::string fix_sel, in
         {
             int label = pair.first;
             int count = pair.second;
-
-            float proportion = static_cast<float>(count) / labels.size();
+            float proportion;
+            if (density) {
+                proportion = static_cast<float>(count) / labels.size();
+            }
+            else {
+                proportion = 1.0f / static_cast<float>(label_counts.size());
+            }
+            
             float range_size = proportion * total_range;
 
             label_ranges[label] = {current_start, current_start + range_size};
@@ -375,7 +381,7 @@ void TsneWorker::updateGPGPUSettings() {
         return static_cast<int>(val);  // Converts float to int (truncation)
     });
     std::string fix_sel = _tsneParameters.getFixSelection();
-    std::vector<hdi::dr::GpgpuSneCompute::Point2D> range_limits = genRanges(fix_sel, labels.size(), labels, _tsneParameters.getAlpha(), _initRanges);
+    std::vector<hdi::dr::GpgpuSneCompute::Point2D> range_limits = genRanges(fix_sel, labels.size(), labels, _tsneParameters.getAlpha(), _initRanges, _tsneParameters.getDensity());
     qDebug() << "First 10 range_limits:";
     for (size_t i = 0; i < std::min<size_t>(10, range_limits.size()); ++i)
     {
@@ -419,7 +425,7 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
             // choice 1: density based for class labels
             // choice 2: input by user
             std::string fix_sel = _tsneParameters.getFixSelection();
-            std::vector<hdi::dr::GpgpuSneCompute::Point2D> range_limits = genRanges(fix_sel, labels.size(), labels, _tsneParameters.getAlpha(), _initRanges);
+            std::vector<hdi::dr::GpgpuSneCompute::Point2D> range_limits = genRanges(fix_sel, labels.size(), labels, _tsneParameters.getAlpha(), _initRanges, _tsneParameters.getDensity());
             
 
             qDebug() << "First 10 range_limits:";

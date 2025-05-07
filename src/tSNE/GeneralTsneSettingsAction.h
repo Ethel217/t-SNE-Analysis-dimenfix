@@ -45,6 +45,7 @@ public: // Action getters
     ToggleAction& getSaveProbDistAction() { return _saveProbDistAction; };
 
     ToggleAction& getDimenFixAction() { return _dimenFixAction; };
+    ToggleAction& getDensityAction() { return _densityAction; };
     OptionAction& getModeAction() { return _modeAction; };
     DecimalAction& getAlphaAction() { return _alphaAction; }
     DecimalAction& getBetaAction() { return _betaAction; }
@@ -84,6 +85,7 @@ protected:
     ToggleAction            _saveProbDistAction;                    /** Save t-SNE to projects action */
 
     ToggleAction            _dimenFixAction;     // true or false
+    ToggleAction            _densityAction;
     OptionAction            _modeAction;
     IntegralAction          _itersAction;
     OptionAction            _fixSelectionAction;

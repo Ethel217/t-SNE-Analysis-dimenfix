@@ -29,7 +29,8 @@ public:
         _alpha(1.0f),
         _beta(0.7f),
         _sigma(0.5f),
-        _switch_axis(false)
+        _switch_axis(false),
+        _density(true)
     {
 
     }
@@ -45,6 +46,7 @@ public:
     void setUpdateCore(int updateCore) { _updateCore = updateCore; }
 
     void setDimenfix(bool dimenFix) { _dimenFix = dimenFix; }
+    void setDensity(bool density) { _density = density; }
     void setMode(std::string mode) { _mode = mode;  }
     void setAlpha(float alpha) { _alpha = alpha; }
     void setBeta(float beta) { _beta = beta; }
@@ -65,6 +67,7 @@ public:
     int getUpdateCore() const { return _updateCore; }
 
     bool getDimenFix() const { return _dimenFix; }
+    bool getDensity() const { return _density; }
     int getIters() const { return _iters; }
     std::string getMode() const { return _mode; }
     std::string getFixSelection() const {return _fix_selection;}
@@ -85,6 +88,7 @@ private:
     GradientDescentType _gradientDescentType;     // Whether to use CPU or GPU gradient descent
 
     bool _dimenFix;
+    bool _density;
     int _iters;
     std::string _mode;
     std::string _fix_selection;

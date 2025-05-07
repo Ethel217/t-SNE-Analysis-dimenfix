@@ -55,6 +55,8 @@ target_link_libraries(${TSNE_PLUGIN} PRIVATE ManiVault::PointData)
 target_link_libraries(${TSNE_PLUGIN} PRIVATE ManiVault::ClusterData)
  
 target_link_libraries(${TSNE_PLUGIN} PRIVATE ${OPENGL_LIBRARIES})
+
+target_link_libraries(${TSNE_PLUGIN} PRIVATE Eigen3::Eigen)
  
 # Find OpenCV
 find_package(OpenCV REQUIRED)
