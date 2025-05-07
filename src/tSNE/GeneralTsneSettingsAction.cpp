@@ -32,30 +32,38 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _betaAction(this, "Compression control"),
     _sigmaAction(this, "Movement control")
 {
+    // regular t-sne settings
     addAction(&_knnAlgorithmAction);
     addAction(&_distanceMetricAction);
     addAction(&_perplexityAction);
-    addAction(&_itersAction);
-    addAction(&_dimenFixAction);
-    addAction(&_densityAction);
-    addAction(&_switchAxisAction);
-    addAction(&_modeAction);
-    addAction(&_fixSelectionAction);
-    addAction(&_classOrderAction);
-    addAction(&_alphaAction);
-    addAction(&_betaAction);
-    addAction(&_sigmaAction);
 
-    addAction(&_labelInputAction);
-    addAction(&_rangeLimitInputAction);
-    addAction(&_rangeLimitLAction);
-    addAction(&_rangeLimitUAction);
-    
     _computationAction.addActions();
 
     addAction(&_reinitAction);
     addAction(&_saveProbDistAction);
+
+    // dimenfix settings
+
+    addAction(&_dimenFixAction);
+    addAction(&_labelInputAction);
+    addAction(&_rangeLimitInputAction);
+    addAction(&_rangeLimitLAction);
+    addAction(&_rangeLimitUAction);
+    addAction(&_alphaAction); // overlap control
+
+    addAction(&_itersAction);
     
+    addAction(&_modeAction);
+    
+    addAction(&_fixSelectionAction);
+    addAction(&_densityAction);
+    addAction(&_classOrderAction);
+
+    // switching actions
+    addAction(&_switchAxisAction);
+    
+    addAction(&_betaAction);
+    // addAction(&_sigmaAction);
     
 
     _knnAlgorithmAction.setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -75,7 +83,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _classOrderAction.initialize(QStringList({ "random", "avg", "disable" }), "random");
     _distanceMetricAction.initialize(QStringList({ "Euclidean", "Cosine", "Inner Product", "Manhattan", "Hamming", "Dot" }), "Euclidean");
     _perplexityAction.initialize(2, 50, 30);
-    _itersAction.initialize(1, 50, 2);
+    _itersAction.initialize(1, 50, 20);
     _alphaAction.initialize(0.0f, 3.0f, 1.0f);
     _betaAction.initialize(0.1f, 1.0f, 0.7f);
     _sigmaAction.initialize(0.1f, 1.0f, 0.5f);
