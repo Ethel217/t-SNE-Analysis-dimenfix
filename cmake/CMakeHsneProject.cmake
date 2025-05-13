@@ -62,16 +62,16 @@ target_link_libraries(${HSNE_PLUGIN} PRIVATE Eigen3::Eigen)
  
 target_link_libraries(${HSNE_PLUGIN} PRIVATE ${OPENGL_LIBRARIES})
  
-# Find OpenCV
-find_package(OpenCV REQUIRED)
+# # Find OpenCV
+# find_package(OpenCV REQUIRED)
  
-# Check if OpenCV is found
-if(OpenCV_FOUND)
-    message(STATUS "OpenCV found: ${OpenCV_VERSION}")
-    target_link_libraries(${HSNE_PLUGIN} PRIVATE ${OpenCV_LIBS})
-else()
-    message(FATAL_ERROR "OpenCV not found!")
-endif()
+# # Check if OpenCV is found
+# if(OpenCV_FOUND)
+#     message(STATUS "OpenCV found: ${OpenCV_VERSION}")
+#     target_link_libraries(${HSNE_PLUGIN} PRIVATE ${OpenCV_LIBS})
+# else()
+#     message(FATAL_ERROR "OpenCV not found!")
+# endif()
  
 if(OpenMP_CXX_FOUND)
     target_link_libraries(${HSNE_PLUGIN} PRIVATE OpenMP::OpenMP_CXX)

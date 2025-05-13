@@ -87,7 +87,7 @@ else()
 	set(flann_DIR "${VCPKG_BASE_PATH}/installed/x64-windows-static-md/share/flann" CACHE PATH "Custom path for flann")
 	set(HDILIB_ROOT "${HDILIB_BASE_PATH}/install/lib/cmake/HDILib" CACHE PATH "Custom path for HDILIB_ROOT")
 	set(HDILib_DIR "${HDILIB_BASE_PATH}/install/lib/cmake/HDILib" CACHE PATH "Custom path for HDILib_DIR")
-	set(OpenCV_DIR "${VCPKG_BASE_PATH}/installed/x64-windows-static-md/share/opencv4" CACHE PATH "Custom path for OpenCV")
+	# set(OpenCV_DIR "${VCPKG_BASE_PATH}/installed/x64-windows-static-md/share/opencv4" CACHE PATH "Custom path for OpenCV")
 	set(Protobuf_DIR "${VCPKG_BASE_PATH}/installed/x64-windows-static-md/share/protobuf" CACHE PATH "Custom path for Protobuf")
 	set(Protobuf_PROTOC_EXECUTABLE "${VCPKG_BASE_PATH}/installed/x64-windows-static-md/tools/protobuf/protoc.exe" CACHE FILEPATH "Path to Protobuf's protoc")
 	set(absl_DIR "${VCPKG_BASE_PATH}/installed/x64-windows-static-md/share/absl" CACHE PATH "Custom path for absl")
@@ -102,13 +102,13 @@ endif()
  
 find_package(Qt6 COMPONENTS Widgets WebEngineWidgets REQUIRED)
 
-find_package(OpenCV REQUIRED)
+# find_package(OpenCV REQUIRED)
 
 find_package(Eigen3 CONFIG REQUIRED)
 
-if(NOT OpenCV_FOUND)
-    message(FATAL_ERROR "OpenCV not found! Please install OpenCV or set the path correctly.")
-endif()
+# if(NOT OpenCV_FOUND)
+#     message(FATAL_ERROR "OpenCV not found! Please install OpenCV or set the path correctly.")
+# endif()
  
 find_package(ManiVault COMPONENTS Core PointData ClusterData ImageData CONFIG)
  
